@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns, PatternGuards #-}
+
 
 module Snake where
 
@@ -60,7 +60,7 @@ move :: AppState -> (AppState, Board.RenderMessage)
 move s@(AppState (SnakeSeq oldHead sb) applePos _ _ g) =
   if isColision
     then (s, Board.GameOver)
-    else 
+    else
       case isEatingApple of
         True ->
           case sb of
