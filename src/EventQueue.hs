@@ -19,7 +19,7 @@ data Event = Tick | UserEvent Snake.Movement
 type UserInputQueue = BoundedChan Snake.Movement
 
 -- | The `EventQueue` has a `TimeQueue` a `UserInputQueue` and the global speed of consumption. The speed is represented by the current speed
-data EventQueue = EventQueue {userInput :: UserInputQueue, speed :: MVar Int}
+newtype EventQueue = EventQueue {userInput :: UserInputQueue}
 
 -- | Given the current score, updates the global shared speed every 10 points by a factor of 10%. Returns the current state
 calculateSpeed :: Int -> Int -> Int

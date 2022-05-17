@@ -7,24 +7,16 @@ import System.Random ( getStdGen, randomRIO )
 import qualified Data.Sequence as S
 import System.Environment (getArgs)
 import Control.Concurrent
-    ( forkIO, newEmptyMVar, putMVar, threadDelay, MVar, readMVar )
+    ( forkIO, newEmptyMVar, threadDelay )
 import System.IO (stdin, hReady, hSetBuffering, BufferMode (NoBuffering), hSetEcho)
 import Control.Concurrent.BoundedChan
-    ( newBoundedChan, tryReadChan, tryWriteChan, BoundedChan )
-
-data Clock = Tick
-data Event = ClockEvent Clock | UserEvent Snake.Movement
-type UserInputQueue = BoundedChan Snake.Movement
-type TimeQueue = MVar Clock
-data EventQueue = EventQueue {clock :: TimeQueue, userInput :: UserInputQueue}
+    ( newBoundedChan, tryReadChan, tryWriteChan )
+import EventQueue ( Event(..), EventQueue(EventQueue) )
 
 
 -- EventQueue utils
-writeClock :: Int -> EventQueue -> IO ()
-writeClock timeSpeed queue@(EventQueue c _) = threadDelay timeSpeed >> putMVar c Tick >> writeClock timeSpeed queue
-
 writeUserInput :: EventQueue -> IO ()
-writeUserInput queue@(EventQueue _ userqueue) = do
+writeUserInput queue@(EventQueue userqueue) = do
     c <- getKey
     case c of
       "\ESC[A" -> tryWriteChan userqueue Snake.North >> writeUserInput queue
@@ -34,10 +26,10 @@ writeUserInput queue@(EventQueue _ userqueue) = do
       _   -> writeUserInput queue
 
 readEvent :: EventQueue -> IO Event
-readEvent (EventQueue c userqueue) = do
+readEvent (EventQueue userqueue) = do
   mv <- tryReadChan userqueue
   case mv of
-    Nothing -> ClockEvent <$> readMVar c
+    Nothing   -> return Tick
     Just move -> return $ UserEvent move
 
 
@@ -73,11 +65,9 @@ main = do
         gameState = Snake.AppState (Snake.SnakeSeq snakeInit S.Empty) appleInit Snake.North binf sg
         board = Board.buildInitialBoard binf snakeInit appleInit
     newUserEventQueue <- newBoundedChan 3
-    newClock <- newEmptyMVar
-    let eventQueue = EventQueue newClock newUserEventQueue
-    _ <- forkIO $ writeClock timeSpeed eventQueue
-    _ <- forkIO $ gameloop gameState board timeSpeed eventQueue
-    writeUserInput eventQueue
+    let eventQueue = EventQueue newUserEventQueue
+    _ <- forkIO $ writeUserInput eventQueue
+    gameloop gameState board timeSpeed eventQueue
 
   where
     gameloop :: Snake.AppState -> Board.RenderState -> Int -> EventQueue -> IO ()
@@ -86,7 +76,7 @@ main = do
         event <- readEvent queue
         let (app',delta) =
               case event of
-                    ClockEvent Tick -> Snake.move app
+                    Tick           -> Snake.move app
                     UserEvent move ->
                       if Snake.movement app == Snake.opositeMovement move
                         then Snake.move app
