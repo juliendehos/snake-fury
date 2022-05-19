@@ -5,7 +5,6 @@ module Board where
 import Data.Array ( (//), listArray, Array )
 import Data.Foldable ( foldl' )
 
-
 type Point = (Int, Int)
 data CellType = Empty | Snake | SnakeHead | Apple deriving (Show, Eq)
 

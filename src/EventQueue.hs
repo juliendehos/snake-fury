@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeApplications #-}
-
 {-|
 This module handle the external events of the game. That is: the user inputs and the time. 
 Is a good example about how to use a Concurrent Bounded Channel. Because we can't make concurrent
