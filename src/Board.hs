@@ -46,7 +46,7 @@ ppCell SnakeHead = "$"
 ppCell Apple     = "X"
 
 render :: RenderState -> String
-render (RenderState b binf@(BoardInfo h w) gOver) =
+render (RenderState b binf@(BoardInfo _ w) gOver) =
   if gOver
     then fst $ boardToString(emptyGrid binf)
     else fst $ boardToString b

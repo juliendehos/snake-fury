@@ -57,7 +57,7 @@ newApple app@(AppState ss x0 _ bi sg) =
 
 
 move :: AppState -> (AppState, Board.RenderMessage)
-move s@(AppState (SnakeSeq oldHead sb) applePos _ _ g) =
+move s@(AppState (SnakeSeq oldHead sb) applePos _ _ _) =
   if isColision
     then (s, Board.GameOver)
     else
