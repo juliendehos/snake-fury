@@ -2,11 +2,11 @@
 
 module Snake where
 
-import Board (BoardInfo (..), Point, DeltaBoard)
+import Board (BoardInfo (..), Point)
 import qualified Board
 import Data.Sequence ( Seq(..))
 import qualified Data.Sequence as S
-import System.Random ( uniformR, RandomGen(split), StdGen, Random (randomR) )
+import System.Random ( uniformR, RandomGen(split), StdGen )
 import Data.Maybe (isJust)
 
 data Movement = North | South | East | West deriving (Show, Eq)
@@ -36,7 +36,7 @@ makeRandomPoint (BoardInfo n i) sg = (newPoint , g1')
 
 -- Check if a point is in the snake
 inSnake :: Point -> SnakeSeq  -> Bool
-inSnake x0 (SnakeSeq x1 seq) = x0 == x1 || isJust (x0 `S.elemIndexL` seq)
+inSnake x0 (SnakeSeq x1 body) = x0 == x1 || isJust (x0 `S.elemIndexL` body)
 
 -- Calculates de new head of the snake
 nextHead :: AppState -> Point
@@ -49,7 +49,7 @@ nextHead (AppState (SnakeSeq (x, y) _) _ mov (BoardInfo h w) _) =
 
 -- Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
 newApple :: AppState -> (Point, StdGen)
-newApple app@(AppState ss x0 move bi sg) =
+newApple app@(AppState ss x0 _ bi sg) =
     if x0' == x0 || x0' `inSnake` ss
       then newApple app{randomGen = sg'}
       else (x0', sg')

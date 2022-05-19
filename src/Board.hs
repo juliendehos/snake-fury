@@ -2,10 +2,8 @@
 
 module Board where
 
-import Data.Array ( (//), listArray, Array, elems )
-import Control.Monad ( foldM_ )
+import Data.Array ( (//), listArray, Array )
 import Data.Foldable ( foldl' )
-import Debug.Trace(trace)
 
 
 type Point = (Int, Int)
