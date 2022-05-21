@@ -1,9 +1,9 @@
 # snake-fury
-By the end of this exercise you'll have a minimum snake game running in the terminal. In the next exercise well refactor it to add some functionality and to make it more efficient. 
+By the end of this exercise you'll have a minimum snake game running in the terminal. In the next exercise will refactor it to add some functionality and to make it more efficient. 
 
 The general arquitecture of the software is the following:
 - we have two thread. 
-    - The sencondary thread is continuously reading from users key board and pushing the key strokes into an asynchronous queue
+    - The sencondary thread is continuously reading from users keyboard and pushing the key strokes into an asynchronous queue
     - The main thread reads at steady time from the queue, and based on what the user has pressed, it runs the game logic and prints the board in the console
 - We keep in memory two states.
     - the game state has all the info about the game logic
@@ -21,15 +21,15 @@ The following diagram helps to visualize
 
                    +--------- Secondary Thread ---------+           This Thread runs continuously
                    |                    +------------+  |           So if the user pressed keys faster
-(user keyboard) -> |  writeUserInput -> | EventQueue |  |           Than the game logic updates, We
+(user keyboard) ----> writeUserInput -> | EventQueue |  |           Than the game logic updates, We
                    |                    +------------+  |           Still capture the key stroke.
                    +---------------------------|--------+
                                                |--->--|  
              +------------------ Main Thread ---------|--------+    This thread runs at constant time,  
              |                                        |        |    as the snake game does. Pulls event
- (draw to <- |  <---|    |-- RenderMessage <--|    readEvent   |    from the queue and updates GameState
+ (draw to <---------|    |-- RenderMessage <--|    readEvent   |    from the queue and updates GameState
   console)   |      |    |                    |       |        |    
-             |    +-------------+           +-----------+      |    Then, the changes in the games state
+             |     +-------------+          +-----------+      |    Then, the changes in the games state
              |  |->| RenderState |->|    |->| GameState |->|   |    spawn messages for the rendering state
              |  |  +-------------+  |    |  +-----------+  |   |    
              |  |     update on     |    |    update on    |   |    The rendering state updates based on
