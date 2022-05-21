@@ -51,7 +51,7 @@ main = do
     (snakeInit, appleInit) <- inititalizePoints h w
     sg <- getStdGen
     let binf = BoardInfo h w
-        gameState = Snake.AppState (Snake.SnakeSeq snakeInit S.Empty) appleInit Snake.North binf sg
+        gameState = Snake.GameState (Snake.SnakeSeq snakeInit S.Empty) appleInit Snake.North binf sg
         board = Board.buildInitialBoard binf snakeInit appleInit
     newUserEventQueue <- newBoundedChan 3
     let eventQueue = EventQueue newUserEventQueue
@@ -62,7 +62,7 @@ main = do
     gameloop gameState board timeSpeed eventQueue
 
   where
-    gameloop :: Snake.AppState -> Board.RenderState -> Int -> EventQueue -> IO ()
+    gameloop :: Snake.GameState -> Board.RenderState -> Int -> EventQueue -> IO ()
     gameloop app b timeSpeed queue = do 
         threadDelay timeSpeed                                              -- Pause the loop for the timespeed we are running
         event <- readEvent queue                                           -- Read the event from the queue

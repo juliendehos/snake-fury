@@ -1,6 +1,16 @@
 
 
-module Snake where
+module Snake (
+  opositeMovement
+  , makeRandomPoint
+  , inSnake
+  , nextHead
+  , newApple
+  , move
+  , Movement(..)
+  , SnakeSeq(..)
+  , GameState(..)
+) where 
 
 import Board (BoardInfo (..), Point)
 import qualified Board
@@ -11,13 +21,13 @@ import Data.Maybe (isJust)
 
 data Movement = North | South | East | West deriving (Show, Eq)
 data SnakeSeq = SnakeSeq {snakeHead :: Point, snakeBody :: Seq Point} deriving (Show, Eq)
-data AppState = AppState
-  { snakeSeq :: SnakeSeq
-  , applePosition :: Point
-  , movement :: Movement
-  , boardInfo :: BoardInfo
-  , randomGen :: StdGen
-  }
+data GameState = GameState
+   { snakeSeq :: SnakeSeq
+   , applePosition :: Point
+   , movement :: Movement
+   , boardInfo :: BoardInfo
+   , randomGen :: StdGen
+   }
   deriving (Show, Eq)
 
 opositeMovement :: Movement -> Movement
@@ -39,8 +49,8 @@ inSnake :: Point -> SnakeSeq  -> Bool
 inSnake x0 (SnakeSeq x1 body) = x0 == x1 || isJust (x0 `S.elemIndexL` body)
 
 -- Calculates de new head of the snake
-nextHead :: AppState -> Point
-nextHead (AppState (SnakeSeq (x, y) _) _ mov (BoardInfo h w) _) =
+nextHead :: GameState -> Point
+nextHead (GameState (SnakeSeq (x, y) _) _ mov (BoardInfo h w) _) =
   case mov of
     North -> if x - 1 <= 0 then (h, y) else (x - 1, y)
     South -> if x + 1  > h then (1, y) else (x + 1, y)
@@ -48,16 +58,16 @@ nextHead (AppState (SnakeSeq (x, y) _) _ mov (BoardInfo h w) _) =
     West  -> if y - 1 <= 0 then (x, w) else (x, y - 1)
 
 -- Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
-newApple :: AppState -> (Point, StdGen)
-newApple app@(AppState ss x0 _ bi sg) =
+newApple :: GameState -> (Point, StdGen)
+newApple app@(GameState ss x0 _ bi sg) =
     if x0' == x0 || x0' `inSnake` ss
       then newApple app{randomGen = sg'}
       else (x0', sg')
   where (x0', sg') = makeRandomPoint bi sg
 
 
-move :: AppState -> (AppState, Board.RenderMessage)
-move s@(AppState (SnakeSeq oldHead sb) applePos _ _ _) =
+move :: GameState -> (GameState, Board.RenderMessage)
+move s@(GameState (SnakeSeq oldHead sb) applePos _ _ _) =
   if isColision
     then (s, Board.GameOver)
     else
