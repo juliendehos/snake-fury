@@ -34,7 +34,7 @@ The following diagram helps to visualize
              |  |  +-------------+  |    |  +-----------+  |   |    
              |  |     update on     |    |    update on    |   |    The rendering state updates based on
              |  |   RenderMessage   |    |      Event      |   |    such messages
-             |  |----<-------<-----.|    |----<-------<----|   |
+             |  |----<-------<------|    |----<-------<----|   |
              +-------------------------------------------------+ 
 
         Notice the the user might not press any key. In such a situation
