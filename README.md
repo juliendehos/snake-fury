@@ -6,9 +6,69 @@ Welcome to snake-fury: the Haskell challenge for beginners. This challenge aims 
 
 The first legs means that you'll be asked to implement some functions/algorithms but it is expected that the challenger will be unable to implement them without some research on hackage documentation, blogs, youtube videos, etc... Guidelines will be given to help the challenger, nevetheless an important skill when learning Haskell is to be able to search, read and understand documentation which is (oftenly, but not always) more complex and less accesible than other programming languages. 
 
-The second legs is even more interesting. Haskell is notoriously known by its difficulty and by the popularization of the holy triad: Functor - Applicative - Monad. The are plenty of tutorials showing examples, hundred of thousand of lines triying to make them accesible and newcomer friendly... But with all due respect, It seems like they all fail to explain: "Why monads? Why not other less mathematical abstraction? Why not classic OOP patterns?". The approach given by snake-fury, is to make the same application twice... it sounds crazy, but the idea goes like this: You'll implement a "pure" version of the snake game. Not monads, no functors, no bullsh\*t. Then you will refactor the core application logic using the state monad, 
+The second legs is even more interesting. Haskell is notoriously known by its difficulty and by the popularization of the holy triad: Functor - Applicative - Monad. The are plenty of tutorials showing examples, hundred of thousand of lines triying to make them accesible and newcomer friendly... But with all due respect, It seems like they all fail to explain: "Why monads? Why not other less mathematical abstraction? Why not classic OOP patterns?". The approach given by snake-fury, is to make the same application twice... it sounds crazy, but the idea goes like this: You'll implement a "pure" version of the snake game. Not monads, no functors, no bullsh\*t. Then you will refactor the core application logic using the state and reader monads. Then you'll be ask to abstract your code, to use `mtl` classes to make your code less dependant on the concrete implementation.
 
 
+Below There is a dramatization of the Haskell learning curve. This challenge aims to be helpfull companion from the newby slope to the temple of oblivion... but be aware, nothing will safe you from temptation of abandom. Hopefully, you'll be able to climb up to the temple and spread the lambdas  
+
+```
+The Haskell learning curve 
+
+^
+|                                                                                                                                                                    
+|                                                                                                                                                                    The temple of 
+| P                                                                                                                                                                        oblivion
+| R                                                                                                                                                                   ===== <*> =====
+| O                                                                                                                                                                   |>>=|     |=<<|
+| D                                                                                                                                                                   |>>=| <$> |=<<|
+| U                                                                                                                                                               ____|>>=|     |=<<| ____
+| C                                                                                                                                                               ------------------------
+| T                                                                                                                                                             _/
+| I                                                                                                                                                            |    once you get in there
+| V                                                                                                                                                          _/      you'll be dammed by  
+| I                                                                                                                                                         |        the monad curse
+| T                                                                                                                                                        /
+| Y                                                                                                                                                       |
+|                                                                                                                         The scrapy mountain            /
+|                                                                                                                         of monads                 ____/
+|                                                                                                                                                  /
+|                                                                                                                                                 /
+|                                                                                                                                                |
+|                                                                                                                                                |
+|                                                                                                                                                |
+|                                                                                                                                               _|  
+|                                                                                                                                              /    
+|                                                                                                                                             |  
+|                                                                                                                                             |   
+|                                                                                                                                          ___|....      
+|                                                                                                                                      ___/        |_     
+|                 The this-isn't-that-hard peak                                                                                       /              |_
+|                                       _                                                                                       _____/                 |_     The giving-up
+|                                      / \                                                                The plateau of     __/  The category of        |_   stairs
+|                                   __/   \   The cliff of self-realizing                                     confidence    /     slopes                   |_
+|                                  /       |  ignorance                                                       _____________/                                 |_
+|                                 /        |                                                                 /                                                 |_
+|                          ______/         |                                                        ________/                                                    |_
+|                         /                \_                                                      /                                                              _|
+|                        /                   |                                                 ___/                                                             _| 
+|    the newby slope    /                    |                                              __/                                            << you'll be       _|
+|                      /                     |     The valley of frustration             __/  The slope                                    << happy this    _|
+|           __________/                      \_                                       __/      of the tryharder                            << way         _|
+|          /                                   \_____________     The oop          __/                                                                  _|
+|     ____/                                                  \     crossroads   __/                                                                   _|
+|  __/                                                        \__________ .... /                 The fields of happy pythonistas                    _|
+| /                                                                      \___________________ :) $ :> $ :) $ :> $ :) $ :> $ :) $ :> _______________|   <- going up isn't allowed!      
+|________________________________________________________________________________________________________________________________________________________________________________________
+ | ADTs               | recursion       | trying to build  | realizing | work harder to  consolidate | Feeling good about | learning monads | using     | monad   | now, you know monads
+ | pattern matching   | curryfication   | your first small |  you know | knowledge. Understad curryf | all learn in the   | in blogs        | monads in | trans   | you'll be unable
+ | list comprehension | function        |   application    | nothing   | partial functions, weird    | newby slope        |                 | actuall   | and mtl | to explain what they
+ | basic functions    |    composition  |                  |           | symbols, etc...             |                    |                 | code      |         | are
+                                                                       
+                                                                       ** The first temptation of abandom                                    ** The second temptation of abandom
+                                                                       "The lands of oop are full of money, jobs and happy programmers... The true and singleton god blessed them!"
+```
+
+## Structure (TODO)
 
 
 - You'll be asked to implement some functionality.
@@ -19,9 +79,7 @@ This challenge is divided in three parts:
 - Part One 
 
 
-## 
-
-By the end of this exercise you'll have a minimum snake game running in the terminal. In the next exercise will refactor it to add some functionality and to make it more efficient. 
+## Arquitecture
 
 The general arquitecture of the software is the following:
 - we have two thread. 
