@@ -1,4 +1,26 @@
 # snake-fury
+Welcome to snake-fury: the Haskell challenge for beginners. This challenge aims to provide a learning path for people willing to learn Haskell further than basic recursion exercises by implementing the snake game in Haskell. The pedagogical approach followed by snake-fury is based in two legs:
+
+- snake-fury isn't a tutorial, but a challenge.
+- snake-fury is focused on learn by refactoring, not by example.
+
+The first legs means that you'll be asked to implement some functions/algorithms but it is expected that the challenger will be unable to implement them without some research on hackage documentation, blogs, youtube videos, etc... Guidelines will be given to help the challenger, nevetheless an important skill when learning Haskell is to be able to search, read and understand documentation which is (oftenly, but not always) more complex and less accesible than other programming languages. 
+
+The second legs is even more interesting. Haskell is notoriously known by its difficulty and by the popularization of the holy triad: Functor - Applicative - Monad. The are plenty of tutorials showing examples, hundred of thousand of lines triying to make them accesible and newcomer friendly... But with all due respect, It seems like they all fail to explain: "Why monads? Why not other less mathematical abstraction? Why not classic OOP patterns?". The approach given by snake-fury, is to make the same application twice... it sounds crazy, but the idea goes like this: You'll implement a "pure" version of the snake game. Not monads, no functors, no bullsh\*t. Then you will refactor the core application logic using the state monad, 
+
+
+
+
+- You'll be asked to implement some functionality.
+
+
+This challenge is divided in three parts:
+
+- Part One 
+
+
+## 
+
 By the end of this exercise you'll have a minimum snake game running in the terminal. In the next exercise will refactor it to add some functionality and to make it more efficient. 
 
 The general arquitecture of the software is the following:
