@@ -51,13 +51,15 @@ data RenderState   = RenderState {board :: Board, gameOver :: Bool} deriving Sho
 
 -- | Given The board info, this function should return a board with all Empty cells
 emptyGrid :: BoardInfo -> Board
-emptyGrid = undefined
+emptyGrid (BoardInfo h w) = listArray ((1,1), (h,w)) (replicate (h*w) Empty)
 
 {- 
 This is a test for emptyGrid. It should return 
 array ((1,1),(2,2)) [((1,1),Empty),((1,2),Empty),((2,1),Empty),((2,2),Empty)]
 -}
 -- >>> emptyGrid (BoardInfo 2 2)
+-- array ((1,1),(2,2)) [((1,1),Empty),((1,2),Empty),((2,1),Empty),((2,2),Empty)]
+--
 
 
 -- | Given BoardInfo, initial point of snake and initial point of apple, builds a board
@@ -66,18 +68,22 @@ buildInitialBoard
   -> Point     -- ^ initial point of the snake
   -> Point     -- ^ initial Point of the apple
   -> RenderState
-buildInitialBoard = undefined
+buildInitialBoard binf sp ap = 
+  RenderState (emptyGrid binf // [(sp, SnakeHead), (ap, Apple)]) False
 
 {- 
 This is a test for buildInitialBoard. It should return 
 RenderState {board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1),Empty),((2,2),Apple)], gameOver = False}
 -}
 -- >>> buildInitialBoard (BoardInfo 2 2) (1,1) (2,2)
+-- RenderState {board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1),Empty),((2,2),Apple)], gameOver = False}
+--
 
 
 -- | Given tye current render state, and a message -> update the render state
 updateRenderState :: RenderState -> RenderMessage -> RenderState
-updateRenderState = undefined
+updateRenderState (RenderState b s) GameOver = RenderState b True
+updateRenderState (RenderState b s) (RenderBoard db) = RenderState (b // db) s
 
 {-
 This is a test for updateRenderState
@@ -89,10 +95,13 @@ message2 should return:
 RenderState {board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1),Empty),((2,2),Apple)], gameOver = True}
 -}
 -- >>> initial_board =  buildInitialBoard (BoardInfo 2 2) (1,1) (2,2)
--- >>> message1 = RenderBoard [((1,2), SnakeHead), ((2,1), Apple), ((1,1), Empty)]
+-- >>> message1 = RenderBoard [((1,2), SnakeHead), ((2,1), Apple), ((1,1), RenderState.Empty)]
 -- >>> message2 = GameOver
 -- >>> updateRenderState initial_board message1
 -- >>> updateRenderState initial_board message2
+-- RenderState {board = array ((1,1),(2,2)) [((1,1),Empty),((1,2),SnakeHead),((2,1),Apple),((2,2),Apple)], gameOver = False}
+-- RenderState {board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1),Empty),((2,2),Apple)], gameOver = True}
+--
 
 
 -- | Provisional Pretty printer
@@ -104,13 +113,21 @@ RenderState {board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1)
 --     Apple -> "X "
 --   In other to avoid shrinking, I'd recommend to use some charachter followed by an space.
 ppCell :: CellType -> String
-ppCell = undefined
-
+ppCell Empty      = "- "
+ppCell Snake      = "0 "
+ppCell SnakeHead  = "$ "
+ppCell Apple      = "X "
 
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
 render :: BoardInfo -> RenderState -> String
-render = undefined
+render (BoardInfo h w) (RenderState b False) = 
+  let go [] = []
+      go xs = 
+        let (l,ls) = splitAt w xs
+        in l : go ls
+  in unlines $ map (concat . map ppCell) $ go (elems b)
+render _ _ = ""
 
 {-
 This is a test for render. It should return:
@@ -118,8 +135,9 @@ This is a test for render. It should return:
 
 Notice, that this depends on what you've chosen for ppCell
 -}
--- >>> board = listArray ((1,1), (3,4)) [Empty, Empty, Empty, Empty, Empty, Snake, SnakeHead, Empty, Empty, Empty, Empty, Apple]
+-- >>> board = listArray ((1,1), (3,4)) [RenderState.Empty, RenderState.Empty, RenderState.Empty, RenderState.Empty, RenderState.Empty, Snake, SnakeHead, RenderState.Empty, RenderState.Empty, RenderState.Empty, RenderState.Empty, Apple]
 -- >>> board_info = BoardInfo 3 4
 -- >>> render_state = RenderState board  False
 -- >>> render board_info render_state
 -- "- - - - \n- 0 $ - \n- - - X \n"
+--
