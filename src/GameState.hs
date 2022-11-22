@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 {-|
 This module defines the logic of the game and the communication with the `Board.RenderState`
 -}
@@ -56,13 +58,23 @@ inSnake p (SnakeSeq h b) = p == h || isJust (S.elemIndexL p b)
 -- | Calculates de new head of the snake. Considering it is moving in the current direction
 --   Take into acount the edges of the board
 nextHead :: BoardInfo -> GameState -> Point
-nextHead = undefined
+nextHead (BoardInfo h w) (GameState {snakeSeq, movement}) = 
+  let (i, j) = snakeHead snakeSeq
+      wrap x n = ((x-1) `mod` n) + 1
+  in case movement of
+    North -> (wrap (i-1) h, j)
+    South -> (wrap (i+1) h, j)
+    East -> (i, wrap (j+1) w)
+    West -> (i, wrap (j-1) w)
 
 
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
 newApple :: BoardInfo -> GameState -> (Point, StdGen)
-newApple = undefined
-
+newApple (BoardInfo h w)  (GameState {randomGen}) = 
+  let (i, g1) = uniformR (1, h) randomGen
+      (j, g2) = uniformR (1, w) g1
+  in ((i, j), g2)
+  
 
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage
 -- Notice that a delta board must include all modified cells in the movement.

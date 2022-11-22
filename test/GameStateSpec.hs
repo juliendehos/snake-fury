@@ -30,7 +30,6 @@ spec = do
         it "2" $ inSnake (1,2) snake_seq `shouldBe` True
         it "3" $ inSnake (1,4) snake_seq `shouldBe` False
 
-{-
     describe "nextHead" $ do
 
         let snake_seq = SnakeSeq (1,1) (Data.Sequence.fromList [(1,2), (1,3)])
@@ -40,10 +39,11 @@ spec = do
             game_state2 = GameState snake_seq apple_pos South (System.Random.mkStdGen 1)
             game_state3 = GameState snake_seq apple_pos North (System.Random.mkStdGen 1)
 
-        it "1" $ nextHead board_info game_state1 == (1,4) `shouldBe` True
-        it "2" $ nextHead board_info game_state2 == (2,1) `shouldBe` True
-        it "3" $ nextHead board_info game_state3 == (4,1) `shouldBe` True
+        it "1" $ nextHead board_info game_state1 `shouldBe` (1,4)
+        it "2" $ nextHead board_info game_state2 `shouldBe` (2,1)
+        it "3" $ nextHead board_info game_state3 `shouldBe` (4,1)
 
+{-
     describe "move" $ do
 
         let snake_seq = SnakeSeq (1,1) (Data.Sequence.fromList [(1,2), (1,3)])
