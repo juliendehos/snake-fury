@@ -77,6 +77,7 @@ newApple bi gs@(GameState {snakeSeq, applePosition, randomGen}) =
       then newApple bi (gs {randomGen = g1})
       else (p1, g1)
 
+
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage
 -- Notice that a delta board must include all modified cells in the movement.
 -- For example, if we move between this two steps
@@ -93,7 +94,6 @@ newApple bi gs@(GameState {snakeSeq, applePosition, randomGen}) =
 --        - 0 $ X          - 0 0 $
 -- We need to send the following delta: [((2,2), Apple), ((4,3), Snake), ((4,4), SnakeHead)]
 -- 
-
 move :: BoardInfo -> GameState -> (Board.RenderMessage , GameState)
 move bi gs@(GameState (SnakeSeq head0 body0) apple0 _m _gen0)
   | inSnake head1 (snakeSeq gs) = 
