@@ -44,9 +44,9 @@ opositeMovement West  = East
 --   You should take a look to System.Random documentation. 
 --   Also, in the import list you have all relevant functions.
 makeRandomPoint :: BoardInfo -> StdGen -> (Point, StdGen)
-makeRandomPoint (BoardInfo h _) g0 = 
-  let (i, g1) = uniformR (1, h) g0
-      (j, g2) = uniformR (1, h) g1
+makeRandomPoint BoardInfo {height, width} g0 = 
+  let (i, g1) = uniformR (1, height) g0
+      (j, g2) = uniformR (1, width) g1
   in ((i,j), g2)
 
 
@@ -58,22 +58,19 @@ inSnake p (SnakeSeq h b) = p == h || isJust (S.elemIndexL p b)
 -- | Calculates de new head of the snake. Considering it is moving in the current direction
 --   Take into acount the edges of the board
 nextHead :: BoardInfo -> GameState -> Point
-nextHead (BoardInfo h w) (GameState {snakeSeq, movement}) = 
+nextHead BoardInfo {height, width} GameState {snakeSeq, movement} = 
   let (i, j) = snakeHead snakeSeq
       wrap x n = ((x-1) `mod` n) + 1
   in case movement of
-    North -> (wrap (i-1) h, j)
-    South -> (wrap (i+1) h, j)
-    East -> (i, wrap (j+1) w)
-    West -> (i, wrap (j-1) w)
+    North -> (wrap (i-1) height, j)
+    South -> (wrap (i+1) height, j)
+    East -> (i, wrap (j+1) width)
+    West -> (i, wrap (j-1) width)
 
 
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
 newApple :: BoardInfo -> GameState -> (Point, StdGen)
-newApple (BoardInfo h w)  (GameState {randomGen}) = 
-  let (i, g1) = uniformR (1, h) randomGen
-      (j, g2) = uniformR (1, w) g1
-  in ((i, j), g2)
+newApple bi GameState {randomGen} = makeRandomPoint bi randomGen
   
 
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage
@@ -94,5 +91,19 @@ newApple (BoardInfo h w)  (GameState {randomGen}) =
 -- 
 
 move :: BoardInfo -> GameState -> (Board.RenderMessage , GameState)
-move = undefined
+move bi gs@(GameState (SnakeSeq head0 body0) apple0 _m _gen0) = 
+  let 
+      head1 = nextHead bi gs
+      (body1 S.:|> last0) = body0 -- TODO empty body ?
+      body2 = head0 S.<| body1
+      ms1 = [(head1, Board.SnakeHead), (head0, Board.Snake)]
+      gs1 = gs {snakeSeq = SnakeSeq head1 body2}
+      (apple1, gen1) = newApple bi gs
+      gs2 = gs1 {applePosition = apple1, randomGen = gen1}
+
+  in if inSnake head1 (snakeSeq gs)
+      then (Board.GameOver, gs) -- TODO move snake first ?
+      else if head1 /= apple0
+        then (Board.RenderBoard (ms1 ++ [(last0, Board.Empty)]), gs1)
+        else (Board.RenderBoard (ms1 ++ [(apple1, Board.Apple)]), gs2)
 

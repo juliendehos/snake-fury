@@ -45,9 +45,9 @@ spec = do
 
     describe "render" $ do
 
-        let board = listArray ((1,1), (3,4)) [RenderState.Empty, RenderState.Empty, RenderState.Empty, RenderState.Empty, RenderState.Empty, Snake, SnakeHead, RenderState.Empty, RenderState.Empty, RenderState.Empty, RenderState.Empty, Apple]
+        let b = listArray ((1,1), (3,4)) [RenderState.Empty, RenderState.Empty, RenderState.Empty, RenderState.Empty, RenderState.Empty, Snake, SnakeHead, RenderState.Empty, RenderState.Empty, RenderState.Empty, RenderState.Empty, Apple]
             board_info = BoardInfo 3 4
-            render_state = RenderState board  False
+            render_state = RenderState b  False
 
         it "1" $ 
             render board_info render_state

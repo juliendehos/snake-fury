@@ -1,6 +1,6 @@
 
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE BangPatterns #-}
 
 
 {-|
@@ -25,7 +25,7 @@ module RenderState where
 
 -- This are all imports you need. Feel free to import more things.
 import Data.Array ( (//), listArray, Array, elems )
-import Data.Foldable ( foldl' )
+-- import Data.Foldable ( foldl' )
 
 -- A point is just a tuple of integers.
 type Point = (Int, Int)
@@ -66,7 +66,7 @@ buildInitialBoard binf sp ap =
 
 -- | Given tye current render state, and a message -> update the render state
 updateRenderState :: RenderState -> RenderMessage -> RenderState
-updateRenderState (RenderState b s) GameOver = RenderState b True
+updateRenderState (RenderState b _) GameOver = RenderState b True
 updateRenderState (RenderState b s) (RenderBoard db) = RenderState (b // db) s
 
 
@@ -87,11 +87,11 @@ ppCell Apple      = "X "
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
 render :: BoardInfo -> RenderState -> String
-render (BoardInfo h w) (RenderState b False) = 
+render (BoardInfo _ w) (RenderState b False) = 
   let go [] = []
       go xs = 
         let (l,ls) = splitAt w xs
         in l : go ls
-  in unlines $ map (concat . map ppCell) $ go (elems b)
+  in unlines $ map (concatMap ppCell) $ go (elems b)
 render _ _ = ""
 
