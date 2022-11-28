@@ -1,3 +1,5 @@
+-- cabal run snake-fury 6 8 3
+
 {-# LANGUAGE NumericUnderscores #-}
 
 module Main where

@@ -3,8 +3,6 @@ module GameStateSpec where
 import GameState
 import RenderState
 
-
--- import Data.Array
 import Data.Sequence
 import System.Random
 import Test.Hspec

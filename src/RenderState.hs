@@ -1,6 +1,5 @@
-
 {-# LANGUAGE OverloadedStrings #-}
--- {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE StrictData #-}
 
 
 {-|

@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE StrictData #-}
 
 {-|
 This module defines the logic of the game and the communication with the `Board.RenderState`
@@ -6,11 +7,11 @@ This module defines the logic of the game and the communication with the `Board.
 module GameState where 
 
 -- These are all the import. Feel free to use more if needed.
-import RenderState (BoardInfo (..), Point, DeltaBoard)
+import RenderState (BoardInfo (..), Point)
 import qualified RenderState as Board
 import Data.Sequence ( Seq(..))
 import qualified Data.Sequence as S
-import System.Random ( uniformR, RandomGen(split), StdGen, Random (randomR))
+import System.Random (uniformR, StdGen)
 import Data.Maybe (isJust)
 
 -- The movement is one of this.
@@ -70,8 +71,11 @@ nextHead BoardInfo {height, width} GameState {snakeSeq, movement} =
 
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
 newApple :: BoardInfo -> GameState -> (Point, StdGen)
-newApple bi GameState {randomGen} = makeRandomPoint bi randomGen
-  
+newApple bi gs@(GameState {snakeSeq, applePosition, randomGen}) = 
+  let (p1, g1) = makeRandomPoint bi randomGen
+  in if inSnake p1 snakeSeq || p1 == applePosition
+      then newApple bi (gs {randomGen = g1})
+      else (p1, g1)
 
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage
 -- Notice that a delta board must include all modified cells in the movement.
