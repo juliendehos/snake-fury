@@ -75,7 +75,7 @@ buildInitialBoard binf sp ap =
 updateRenderState :: RenderState -> RenderMessage -> RenderState
 updateRenderState (RenderState b _ sc) GameOver = RenderState b True sc
 updateRenderState (RenderState b s sc) (RenderBoard db) = RenderState (b // db) s sc
-updateRenderState (RenderState b s _) (UpdateScore sc1) = RenderState b s sc1
+updateRenderState (RenderState b s sc) (UpdateScore usc) = RenderState b s (sc+usc)
 
 
 -- | Provisional Pretty printer

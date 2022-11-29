@@ -101,7 +101,6 @@ move bi gs@(GameState (SnakeSeq head0 body0) apple0 _m _gen0)
       , gs
       ) -- TODO move snake first ?
   | head1 == apple0 = 
-      -- TODO update score
       ( [ Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Snake), (apple1, Board.Apple)]
         , Board.UpdateScore 1
         ] 
