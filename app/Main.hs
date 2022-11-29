@@ -10,13 +10,14 @@ import Control.Concurrent (
  )
 import EventQueue (
   Event (Tick, UserEvent),
-  EventQueue (initialSpeed),
+  EventQueue,
   readEvent,
   writeUserInput,
+  setSpeed
  )
 import GameState (GameState (movement), move, opositeMovement)
 import Initialization (gameInitialization)
-import RenderState (BoardInfo, RenderState, render, updateMessages)
+import RenderState (BoardInfo, RenderState (..), render, updateMessages)
 import System.Environment (getArgs)
 import System.IO (BufferMode (NoBuffering), hSetBinaryMode, hSetBuffering, hSetEcho, stdin, stdout)
 
@@ -28,7 +29,8 @@ import System.IO (BufferMode (NoBuffering), hSetBinaryMode, hSetBuffering, hSetE
 --   - Render into the console
 gameloop :: BoardInfo -> GameState -> RenderState -> EventQueue -> IO ()
 gameloop binf gstate rstate queue = do
-  threadDelay $ initialSpeed queue
+  new_speed <- setSpeed (score rstate) queue
+  threadDelay new_speed
   event <- readEvent queue
   let (delta, gstate') =
         case event of
