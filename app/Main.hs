@@ -16,7 +16,7 @@ import EventQueue (
  )
 import GameState (GameState (movement), move, opositeMovement)
 import Initialization (gameInitialization)
-import RenderState (BoardInfo, RenderState, render, updateRenderState)
+import RenderState (BoardInfo, RenderState, render, updateMessages)
 import System.Environment (getArgs)
 import System.IO (BufferMode (NoBuffering), hSetBinaryMode, hSetBuffering, hSetEcho, stdin, stdout)
 
@@ -37,7 +37,7 @@ gameloop binf gstate rstate queue = do
             if movement gstate == opositeMovement m
               then move binf gstate
               else move binf $ gstate{movement = m}
-  let rstate' = updateRenderState rstate delta
+  let rstate' = updateMessages rstate delta
   putStr "\ESC[2J" --This cleans the console screen
   putStr $ render binf rstate'
   gameloop binf gstate' rstate' queue

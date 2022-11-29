@@ -24,7 +24,7 @@ module RenderState where
 
 -- This are all imports you need. Feel free to import more things.
 import Data.Array ( (//), listArray, Array, elems )
--- import Data.Foldable ( foldl' )
+import Data.Foldable ( foldl' )
 
 -- A point is just a tuple of integers.
 type Point = (Int, Int)
@@ -43,10 +43,18 @@ type DeltaBoard = [(Point, CellType)]
 -- | The render message represent all message the GameState can send to the RenderState
 --   Right now Possible messages are a RenderBoard with a payload indicating which cells change
 --   or a GameOver message.
-data RenderMessage = RenderBoard DeltaBoard | GameOver deriving (Eq, Show)
+data RenderMessage 
+  = RenderBoard DeltaBoard 
+  | GameOver 
+  | UpdateScore Int 
+  deriving (Eq, Show)
 
 -- | The RenderState contains the board and if the game is over or not.
-data RenderState   = RenderState {board :: Board, gameOver :: Bool} deriving (Eq, Show)
+data RenderState = RenderState 
+  { board :: Board
+  , gameOver :: Bool
+  , score :: Int
+  } deriving (Eq, Show)
 
 -- | Given The board info, this function should return a board with all Empty cells
 emptyGrid :: BoardInfo -> Board
@@ -60,13 +68,14 @@ buildInitialBoard
   -> Point     -- ^ initial Point of the apple
   -> RenderState
 buildInitialBoard binf sp ap = 
-  RenderState (emptyGrid binf // [(sp, SnakeHead), (ap, Apple)]) False
+  RenderState (emptyGrid binf // [(sp, SnakeHead), (ap, Apple)]) False 0
 
 
 -- | Given tye current render state, and a message -> update the render state
 updateRenderState :: RenderState -> RenderMessage -> RenderState
-updateRenderState (RenderState b _) GameOver = RenderState b True
-updateRenderState (RenderState b s) (RenderBoard db) = RenderState (b // db) s
+updateRenderState (RenderState b _ sc) GameOver = RenderState b True sc
+updateRenderState (RenderState b s sc) (RenderBoard db) = RenderState (b // db) s sc
+updateRenderState (RenderState b s _) (UpdateScore sc1) = RenderState b s sc1
 
 
 -- | Provisional Pretty printer
@@ -86,11 +95,14 @@ ppCell Apple      = "X "
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
 render :: BoardInfo -> RenderState -> String
-render (BoardInfo _ w) (RenderState b False) = 
+render (BoardInfo _ w) (RenderState b False _sc) = 
   let go [] = []
       go xs = 
         let (l,ls) = splitAt w xs
         in l : go ls
   in unlines $ map (concatMap ppCell) $ go (elems b)
 render _ _ = ""
+
+updateMessages :: RenderState -> [RenderMessage] -> RenderState
+updateMessages = foldl' updateRenderState
 

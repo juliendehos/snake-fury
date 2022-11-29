@@ -94,22 +94,25 @@ newApple bi gs@(GameState {snakeSeq, applePosition, randomGen}) =
 --        - 0 $ X          - 0 0 $
 -- We need to send the following delta: [((2,2), Apple), ((4,3), Snake), ((4,4), SnakeHead)]
 -- 
-move :: BoardInfo -> GameState -> (Board.RenderMessage , GameState)
+move :: BoardInfo -> GameState -> ([Board.RenderMessage] , GameState)
 move bi gs@(GameState (SnakeSeq head0 body0) apple0 _m _gen0)
   | inSnake head1 (snakeSeq gs) = 
-      ( Board.GameOver
+      ( [Board.GameOver]
       , gs
       ) -- TODO move snake first ?
   | head1 == apple0 = 
-      ( Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Snake), (apple1, Board.Apple)]
+      -- TODO update score
+      ( [ Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Snake), (apple1, Board.Apple)]
+        , Board.UpdateScore 1
+        ] 
       , gs {snakeSeq = SnakeSeq head1 (head0 S.<| body0), applePosition = apple1, randomGen = gen1}
       )
   | S.null body0 = 
-      ( Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Empty)]
+      ( [Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Empty)]]
       , gs {snakeSeq = SnakeSeq head1 body0}
       )
   | otherwise = 
-      ( Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Snake), (last0, Board.Empty)]
+      ( [Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Snake), (last0, Board.Empty)]]
       , gs {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
       )
 
