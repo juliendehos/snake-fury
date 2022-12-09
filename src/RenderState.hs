@@ -24,6 +24,7 @@ module RenderState where
 
 -- This are all imports you need. Feel free to import more things.
 import Data.Array ( (//), listArray, Array, elems )
+import qualified Data.ByteString.Builder as B
 import Data.Foldable ( foldl' )
 
 -- A point is just a tuple of integers.
@@ -86,21 +87,26 @@ updateRenderState (RenderState b s sc) (UpdateScore usc) = RenderState b s (sc+u
 --     SnakeHead -> "$ "
 --     Apple -> "X "
 --   In other to avoid shrinking, I'd recommend to use some charachter followed by an space.
-ppCell :: CellType -> String
+ppCell :: CellType -> B.Builder
 ppCell Empty      = "- "
 ppCell Snake      = "0 "
 ppCell SnakeHead  = "$ "
 ppCell Apple      = "X "
 
+ppScore :: Int -> B.Builder
+ppScore s = "score: " <> B.intDec s <> "\n"
+
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
-render :: BoardInfo -> RenderState -> String
+render :: BoardInfo -> RenderState -> B.Builder
 render (BoardInfo _ w) (RenderState b False _sc) = 
   let go [] = []
       go xs = 
         let (l,ls) = splitAt w xs
         in l : go ls
-  in unlines $ map (concatMap ppCell) $ go (elems b)
+      cellLines = go (elems b) :: [[CellType]]
+      strLines = map ((<> "\n") . mconcat . map ppCell) cellLines :: [B.Builder]
+ in mconcat strLines
 render _ _ = ""
 
 updateMessages :: RenderState -> [RenderMessage] -> RenderState

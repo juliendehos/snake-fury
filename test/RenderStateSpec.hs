@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module RenderStateSpec where
 
 import RenderState
 
 import Data.Array
+import qualified Data.ByteString.Builder as B
 import Test.Hspec
 
 main :: IO ()
@@ -83,7 +86,7 @@ spec = do
             render_state = RenderState b  False 0
 
         it "1" $ 
-            render board_info render_state
+            B.toLazyByteString (render board_info render_state)
             `shouldBe`
             "- - - - \n- 0 $ - \n- - - X \n"
 

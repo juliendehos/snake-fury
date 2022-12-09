@@ -17,7 +17,9 @@ import EventQueue (
  )
 import GameState (GameState (movement), move, opositeMovement)
 import Initialization (gameInitialization)
-import RenderState (BoardInfo, RenderState (..), render, updateMessages)
+import RenderState (BoardInfo, RenderState (..), render, updateMessages, ppScore)
+
+import qualified Data.ByteString.Builder as B
 import System.Environment (getArgs)
 import System.IO (BufferMode (NoBuffering), hSetBinaryMode, hSetBuffering, hSetEcho, stdin, stdout)
 
@@ -29,7 +31,8 @@ import System.IO (BufferMode (NoBuffering), hSetBinaryMode, hSetBuffering, hSetE
 --   - Render into the console
 gameloop :: BoardInfo -> GameState -> RenderState -> EventQueue -> IO ()
 gameloop binf gstate rstate queue = do
-  new_speed <- setSpeed (score rstate) queue
+  let s = score rstate
+  new_speed <- setSpeed s queue
   threadDelay new_speed
   event <- readEvent queue
   let (delta, gstate') =
@@ -41,7 +44,8 @@ gameloop binf gstate rstate queue = do
               else move binf $ gstate{movement = m}
   let rstate' = updateMessages rstate delta
   putStr "\ESC[2J" --This cleans the console screen
-  putStr $ render binf rstate'
+  B.hPutBuilder stdout (ppScore s)
+  B.hPutBuilder stdout $ render binf rstate'
   gameloop binf gstate' rstate' queue
 
 -- | main.

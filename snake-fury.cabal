@@ -62,6 +62,6 @@ test-suite spec
   main-is:          Spec.hs
   hs-source-dirs:   test
   type:             exitcode-stdio-1.0
-  build-depends:    array, base, containers, hspec, random, snake-fury
+  build-depends:    array, base, bytestring, containers, hspec, random, snake-fury
   other-modules:    GameStateSpec, RenderStateSpec
 
