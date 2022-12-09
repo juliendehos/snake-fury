@@ -44,11 +44,12 @@ opositeMovement West  = East
 -- | Purely creates a random point within the board limits
 --   You should take a look to System.Random documentation. 
 --   Also, in the import list you have all relevant functions.
-makeRandomPoint :: BoardInfo -> StdGen -> (Point, StdGen)
-makeRandomPoint BoardInfo {height, width} g0 = 
-  let (i, g1) = uniformR (1, height) g0
+makeRandomPoint :: BoardInfo -> GameState -> (Point, GameState)
+-- makeRandomPoint :: BoardInfo -> StdGen -> (Point, StdGen)
+makeRandomPoint BoardInfo {height, width} gs0 = 
+  let (i, g1) = uniformR (1, height) (randomGen gs0)
       (j, g2) = uniformR (1, width) g1
-  in ((i,j), g2)
+  in ((i,j), gs0 { randomGen = g2})
 
 
 -- | Check if a point is in the snake
@@ -71,11 +72,11 @@ nextHead BoardInfo {height, width} GameState {snakeSeq, movement} =
 
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
 newApple :: BoardInfo -> GameState -> (Point, StdGen)
-newApple bi gs@(GameState {snakeSeq, applePosition, randomGen}) = 
-  let (p1, g1) = makeRandomPoint bi randomGen
+newApple bi gs0@(GameState {snakeSeq, applePosition}) = 
+  let (p1, gs1) = makeRandomPoint bi gs0
   in if inSnake p1 snakeSeq || p1 == applePosition
-      then newApple bi (gs {randomGen = g1})
-      else (p1, g1)
+      then newApple bi gs1
+      else (p1, randomGen gs1)
 
 
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage
