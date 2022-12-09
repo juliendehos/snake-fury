@@ -128,4 +128,3 @@ displaceSnake head1 bi gs0@(GameState (SnakeSeq head0 body0) _ _ _) =
     , gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
     )
     where (body1 S.:|> last0) = body0
-
