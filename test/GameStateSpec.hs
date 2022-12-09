@@ -73,3 +73,5 @@ spec = do
             `shouldBe`
             [GameOver]
 
+-- TODO extendSnake
+
