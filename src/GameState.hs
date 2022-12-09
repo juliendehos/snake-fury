@@ -44,11 +44,11 @@ opositeMovement West  = East
 -- | Purely creates a random point within the board limits
 --   You should take a look to System.Random documentation. 
 --   Also, in the import list you have all relevant functions.
-makeRandomPoint :: BoardInfo -> StdGen -> (Point, StdGen)
-makeRandomPoint BoardInfo {height, width} g0 = 
-  let (i, g1) = uniformR (1, height) g0
+makeRandomPoint :: BoardInfo -> GameState -> (Point, GameState)
+makeRandomPoint BoardInfo {height, width} gs0 = 
+  let (i, g1) = uniformR (1, height) (randomGen gs0)
       (j, g2) = uniformR (1, width) g1
-  in ((i,j), g2)
+  in ((i,j), gs0 { randomGen = g2})
 
 
 -- | Check if a point is in the snake
@@ -70,12 +70,12 @@ nextHead BoardInfo {height, width} GameState {snakeSeq, movement} =
 
 
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
-newApple :: BoardInfo -> GameState -> (Point, StdGen)
-newApple bi gs@(GameState {snakeSeq, applePosition, randomGen}) = 
-  let (p1, g1) = makeRandomPoint bi randomGen
+newApple :: BoardInfo -> GameState -> (Point, GameState)
+newApple bi gs0@(GameState {snakeSeq, applePosition}) = 
+  let (p1, gs1) = makeRandomPoint bi gs0
   in if inSnake p1 snakeSeq || p1 == applePosition
-      then newApple bi (gs {randomGen = g1})
-      else (p1, g1)
+      then newApple bi gs1
+      else (p1, gs1)
 
 
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage
@@ -95,28 +95,28 @@ newApple bi gs@(GameState {snakeSeq, applePosition, randomGen}) =
 -- We need to send the following delta: [((2,2), Apple), ((4,3), Snake), ((4,4), SnakeHead)]
 -- 
 move :: BoardInfo -> GameState -> ([Board.RenderMessage] , GameState)
-move bi gs@(GameState (SnakeSeq head0 body0) apple0 _m _gen0)
-  | inSnake head1 (snakeSeq gs) = 
+move bi gs0@(GameState (SnakeSeq head0 body0) apple0 _m _gen0)
+  | inSnake head1 (snakeSeq gs0) = 
       ( [Board.GameOver]
-      , gs
+      , gs0
       ) -- TODO move snake first ?
   | head1 == apple0 = 
       ( [ Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Snake), (apple1, Board.Apple)]
         , Board.UpdateScore 1
         ] 
-      , gs {snakeSeq = SnakeSeq head1 (head0 S.<| body0), applePosition = apple1, randomGen = gen1}
+      , gs1 {snakeSeq = SnakeSeq head1 (head0 S.<| body0), applePosition = apple1}
       )
   | S.null body0 = 
       ( [Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Empty)]]
-      , gs {snakeSeq = SnakeSeq head1 body0}
+      , gs0 {snakeSeq = SnakeSeq head1 body0}
       )
   | otherwise = 
       ( [Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Snake), (last0, Board.Empty)]]
-      , gs {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
+      , gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
       )
 
   where
-      head1 = nextHead bi gs
+      head1 = nextHead bi gs0
       (body1 S.:|> last0) = body0 
-      (apple1, gen1) = newApple bi gs
+      (apple1, gs1) = newApple bi gs0
 
