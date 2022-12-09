@@ -75,7 +75,7 @@ newApple bi gs0@(GameState {snakeSeq, applePosition}) =
   let (p1, gs1) = makeRandomPoint bi gs0
   in if inSnake p1 snakeSeq || p1 == applePosition
       then newApple bi gs1
-      else (p1, gs1)
+      else (p1, gs1 { applePosition = p1 } )
 
 
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage
@@ -102,29 +102,31 @@ move bi gs0@(GameState (SnakeSeq head0 body0) apple0 _m _gen0)
       ) -- TODO move snake first ?
   | head1 == apple0 = 
       let (deltas, gs1) = extendSnake head1 bi gs0
-      in ([Board.RenderBoard deltas, Board.UpdateScore 1], gs1)
-  | S.null body0 = 
-      ( [Board.RenderBoard [(head1, Board.SnakeHead), (head0, Board.Empty)]]
-      , gs0 {snakeSeq = SnakeSeq head1 body0}
-      )
+          (apple1, gs2) = newApple bi gs1
+      in ([Board.RenderBoard (deltas <> [(apple1, Board.Apple)]), Board.UpdateScore 1], gs2)
   | otherwise = 
       let (deltas, gs1) = displaceSnake head1 bi gs0
       in ([Board.RenderBoard deltas], gs1)
-  where
-      head1 = nextHead bi gs0
+
+  where head1 = nextHead bi gs0
 
 
 extendSnake :: Point -> BoardInfo -> GameState -> (Board.DeltaBoard, GameState)
 extendSnake head1 bi gs0@(GameState (SnakeSeq head0 body0) _ _ _) =
-    ( [(head1, Board.SnakeHead), (head0, Board.Snake), (apple1, Board.Apple)]
-    , gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body0), applePosition = apple1}
+    ( [(head1, Board.SnakeHead), (head0, Board.Snake)]
+    , gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body0)}
     )
-    where (apple1, gs1) = newApple bi gs0
 
 
 displaceSnake :: Point -> BoardInfo -> GameState -> (Board.DeltaBoard, GameState)
-displaceSnake head1 bi gs0@(GameState (SnakeSeq head0 body0) _ _ _) = 
-    ( [(head1, Board.SnakeHead), (head0, Board.Snake), (last0, Board.Empty)]
-    , gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
-    )
+displaceSnake head1 bi gs0@(GameState (SnakeSeq head0 body0) _ _ _)
+    | S.null body0 = 
+        ( [(head1, Board.SnakeHead), (head0, Board.Empty)]
+        , gs0 {snakeSeq = SnakeSeq head1 body0}
+        )
+    | otherwise = 
+        ( [(head1, Board.SnakeHead), (head0, Board.Snake), (last0, Board.Empty)]
+        , gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
+        )
     where (body1 S.:|> last0) = body0
+
