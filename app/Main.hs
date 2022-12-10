@@ -17,7 +17,7 @@ import EventQueue (
  )
 import GameState (GameState (movement), move, opositeMovement)
 import Initialization (gameInitialization)
-import RenderState (BoardInfo, RenderState (..), render, updateMessages, ppScore)
+import RenderState (BoardInfo, RenderState (..), render, updateMessages)
 
 import qualified Data.ByteString.Builder as B
 import System.Environment (getArgs)
@@ -44,7 +44,6 @@ gameloop binf gstate rstate queue = do
               else move binf $ gstate{movement = m}
   let rstate' = updateMessages rstate delta
   putStr "\ESC[2J" --This cleans the console screen
-  B.hPutBuilder stdout (ppScore s)
   B.hPutBuilder stdout $ render binf rstate'
   gameloop binf gstate' rstate' queue
 

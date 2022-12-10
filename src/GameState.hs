@@ -1,18 +1,21 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE StrictData #-}
 
 {-|
 This module defines the logic of the game and the communication with the `Board.RenderState`
 -}
-module GameState where 
+module GameState where
 
 -- These are all the import. Feel free to use more if needed.
 import RenderState (BoardInfo (..), Point)
 import qualified RenderState as Board
+
+import Control.Monad.Trans.State.Strict (State, get, put, modify, gets, runState)
+import Data.Maybe (isJust)
 import Data.Sequence ( Seq(..))
 import qualified Data.Sequence as S
 import System.Random (uniformR, StdGen)
-import Data.Maybe (isJust)
 
 -- The movement is one of this.
 data Movement = North | South | East | West deriving (Show, Eq)
@@ -33,6 +36,8 @@ data GameState = GameState
   }
   deriving (Show, Eq)
 
+type GameStep a = State GameState a
+
 -- | This function should calculate the opposite movement.
 opositeMovement :: Movement -> Movement
 opositeMovement North = South
@@ -44,11 +49,13 @@ opositeMovement West  = East
 -- | Purely creates a random point within the board limits
 --   You should take a look to System.Random documentation. 
 --   Also, in the import list you have all relevant functions.
-makeRandomPoint :: BoardInfo -> GameState -> (Point, GameState)
-makeRandomPoint BoardInfo {height, width} gs0 = 
+makeRandomPoint :: BoardInfo -> GameStep Point
+makeRandomPoint BoardInfo {height, width} = do
+  gs0 <- get
   let (i, g1) = uniformR (1, height) (randomGen gs0)
       (j, g2) = uniformR (1, width) g1
-  in ((i,j), gs0 { randomGen = g2})
+  put gs0 { randomGen = g2 }
+  return (i,j)
 
 
 -- | Check if a point is in the snake
@@ -59,7 +66,7 @@ inSnake p (SnakeSeq h b) = p == h || isJust (S.elemIndexL p b)
 -- | Calculates de new head of the snake. Considering it is moving in the current direction
 --   Take into acount the edges of the board
 nextHead :: BoardInfo -> GameState -> Point
-nextHead BoardInfo {height, width} GameState {snakeSeq, movement} = 
+nextHead BoardInfo {height, width} GameState {snakeSeq, movement} =
   let (i, j) = snakeHead snakeSeq
       wrap x n = ((x-1) `mod` n) + 1
   in case movement of
@@ -70,12 +77,13 @@ nextHead BoardInfo {height, width} GameState {snakeSeq, movement} =
 
 
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
-newApple :: BoardInfo -> GameState -> (Point, GameState)
-newApple bi gs0@(GameState {snakeSeq, applePosition}) = 
-  let (p1, gs1) = makeRandomPoint bi gs0
-  in if inSnake p1 snakeSeq || p1 == applePosition
-      then newApple bi gs1
-      else (p1, gs1 { applePosition = p1 } )
+newApple :: BoardInfo -> GameStep Point
+newApple bi = do
+  gs0 <- get
+  p1 <- makeRandomPoint bi
+  if inSnake p1 (snakeSeq gs0) || p1 == applePosition gs0
+      then newApple bi
+      else modify (\gs -> gs { applePosition = p1 }) >> return p1
 
 
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage
@@ -94,39 +102,37 @@ newApple bi gs0@(GameState {snakeSeq, applePosition}) =
 --        - 0 $ X          - 0 0 $
 -- We need to send the following delta: [((2,2), Apple), ((4,3), Snake), ((4,4), SnakeHead)]
 -- 
-move :: BoardInfo -> GameState -> ([Board.RenderMessage] , GameState)
-move bi gs0@(GameState (SnakeSeq head0 body0) apple0 _m _gen0)
-  | inSnake head1 (snakeSeq gs0) = 
-      ( [Board.GameOver]
-      , gs0
-      ) -- TODO move snake first ?
-  | head1 == apple0 = 
-      let (deltas, gs1) = extendSnake head1 bi gs0
-          (apple1, gs2) = newApple bi gs1
-      in ([Board.RenderBoard (deltas <> [(apple1, Board.Apple)]), Board.UpdateScore 1], gs2)
-  | otherwise = 
-      let (deltas, gs1) = displaceSnake head1 bi gs0
-      in ([Board.RenderBoard deltas], gs1)
+move :: BoardInfo -> GameState -> ([Board.RenderMessage], GameState)
+move bi = runState (step bi)
 
-  where head1 = nextHead bi gs0
-
-
-extendSnake :: Point -> BoardInfo -> GameState -> (Board.DeltaBoard, GameState)
-extendSnake head1 bi gs0@(GameState (SnakeSeq head0 body0) _ _ _) =
-    ( [(head1, Board.SnakeHead), (head0, Board.Snake)]
-    , gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body0)}
-    )
+step :: BoardInfo -> GameStep [Board.RenderMessage]
+step bi = do
+  gs0 <- get
+  let head1 = nextHead bi gs0
+  if | inSnake head1 (snakeSeq gs0) -> return [Board.GameOver]
+     | head1 == applePosition gs0 -> do
+        deltas <- extendSnake head1 bi
+        apple1 <- newApple bi
+        return [Board.RenderBoard (deltas <> [(apple1, Board.Apple)]), Board.UpdateScore 1]
+     | otherwise -> do
+        deltas <- displaceSnake head1 bi
+        return [Board.RenderBoard deltas]
 
 
-displaceSnake :: Point -> BoardInfo -> GameState -> (Board.DeltaBoard, GameState)
-displaceSnake head1 bi gs0@(GameState (SnakeSeq head0 body0) _ _ _)
-    | S.null body0 = 
-        ( [(head1, Board.SnakeHead), (head0, Board.Empty)]
-        , gs0 {snakeSeq = SnakeSeq head1 body0}
-        )
-    | otherwise = 
-        ( [(head1, Board.SnakeHead), (head0, Board.Snake), (last0, Board.Empty)]
-        , gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
-        )
-    where (body1 S.:|> last0) = body0
+extendSnake :: Point -> BoardInfo -> GameStep Board.DeltaBoard
+extendSnake head1 bi = do
+  gs0@(GameState (SnakeSeq head0 body0) _ _ _) <- get
+  put gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body0)}
+  return [(head1, Board.SnakeHead), (head0, Board.Snake)]
+
+
+displaceSnake :: Point -> BoardInfo -> GameStep Board.DeltaBoard
+displaceSnake head1 bi = do
+  gs0@(GameState (SnakeSeq head0 body0) _ _ _) <- get
+  let (body1 S.:|> last0) = body0
+  if S.null body0 
+    then put gs0 {snakeSeq = SnakeSeq head1 body0}
+      >> return [(head1, Board.SnakeHead), (head0, Board.Empty)]
+    else put gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
+      >> return [(head1, Board.SnakeHead), (head0, Board.Snake), (last0, Board.Empty)]
 

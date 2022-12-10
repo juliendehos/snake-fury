@@ -88,5 +88,5 @@ spec = do
         it "1" $ 
             B.toLazyByteString (render board_info render_state)
             `shouldBe`
-            "- - - - \n- 0 $ - \n- - - X \n"
+            "- - - - \n- 0 $ - \n- - - X \nscore: 0\n"
 

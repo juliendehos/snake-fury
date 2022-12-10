@@ -1,6 +1,6 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
-
 
 {-|
 This module defines the board. A board is an array of CellType elements indexed by a tuple of ints: the height and width.
@@ -94,20 +94,21 @@ ppCell SnakeHead  = "$ "
 ppCell Apple      = "X "
 
 ppScore :: Int -> B.Builder
-ppScore s = "score: " <> B.intDec s <> "\n"
+ppScore s = "score: " <> B.intDec s <> B.charUtf8 '\n'
 
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
 render :: BoardInfo -> RenderState -> B.Builder
-render (BoardInfo _ w) (RenderState b False _sc) = 
-  let go [] = []
-      go xs = 
-        let (l,ls) = splitAt w xs
-        in l : go ls
-      cellLines = go (elems b) :: [[CellType]]
-      strLines = map ((<> "\n") . mconcat . map ppCell) cellLines :: [B.Builder]
- in mconcat strLines
-render _ _ = ""
+render (BoardInfo _ w) (RenderState b gOver s) = 
+  let go (!str, !i) x =
+        if i==w
+          then (str <> ppCell x <> B.charUtf8 '\n', 1)
+          else (str <> ppCell x, i+1) 
+      (boardString, _) = foldl' go (mempty, 1) b
+ in if gOver
+      then boardString <> ppScore s <> "\ngame over"
+      else boardString <> ppScore s
+
 
 updateMessages :: RenderState -> [RenderMessage] -> RenderState
 updateMessages = foldl' updateRenderState
