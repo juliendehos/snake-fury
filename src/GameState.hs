@@ -7,6 +7,8 @@ module GameState where
 import RenderState (BoardInfo (..), Point)
 import qualified RenderState as Board
 
+import Control.Monad.Trans.Class ( MonadTrans(lift) )
+import Control.Monad.Trans.Reader (ReaderT (runReaderT), ask)
 import Control.Monad.Trans.State.Strict (State, get, put, modify, gets, runState)
 import Data.Maybe (isJust)
 import Data.Sequence ( Seq(..))
@@ -32,7 +34,7 @@ data GameState = GameState
   }
   deriving (Show, Eq)
 
-type GameStep a = State GameState a
+type GameStep a = ReaderT BoardInfo (State GameState) a
 
 -- | This function should calculate the opposite movement.
 opositeMovement :: Movement -> Movement
@@ -45,12 +47,13 @@ opositeMovement West  = East
 -- | Purely creates a random point within the board limits
 --   You should take a look to System.Random documentation. 
 --   Also, in the import list you have all relevant functions.
-makeRandomPoint :: BoardInfo -> GameStep Point
-makeRandomPoint BoardInfo {height, width} = do
-  gs0 <- get
+makeRandomPoint :: GameStep Point
+makeRandomPoint = do
+  BoardInfo height width <- ask
+  gs0 <- lift get
   let (i, g1) = uniformR (1, height) (randomGen gs0)
       (j, g2) = uniformR (1, width) g1
-  put gs0 { randomGen = g2 }
+  lift $ put gs0 { randomGen = g2 }
   return (i,j)
 
 
@@ -73,14 +76,14 @@ nextHead BoardInfo {height, width} GameState {snakeSeq, movement} =
 
 
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
-newApple :: BoardInfo -> GameStep Point
-newApple bi = do
-  snake_seq <- gets snakeSeq
-  apple0 <- gets applePosition
-  p1 <- makeRandomPoint bi
+newApple :: GameStep Point
+newApple = do
+  snake_seq <- lift $ gets snakeSeq
+  apple0 <- lift $ gets applePosition
+  p1 <- makeRandomPoint
   if inSnake p1 snake_seq || p1 == apple0
-      then newApple bi
-      else modify (\gs -> gs { applePosition = p1 }) >> return p1
+      then newApple
+      else lift (modify (\gs -> gs { applePosition = p1 })) >> return p1
 
 
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage
@@ -100,36 +103,37 @@ newApple bi = do
 -- We need to send the following delta: [((2,2), Apple), ((4,3), Snake), ((4,4), SnakeHead)]
 -- 
 move :: BoardInfo -> GameState -> ([Board.RenderMessage], GameState)
-move bi = runState (step bi)
+move bi = runState (runReaderT step bi)
 
-step :: BoardInfo -> GameStep [Board.RenderMessage]
-step bi = do
-  gs0 <- get
+step :: GameStep [Board.RenderMessage]
+step = do
+  gs0 <- lift $ get
+  bi <- ask
   let head1 = nextHead bi gs0
   if | inSnake head1 (snakeSeq gs0) -> return [Board.GameOver]
      | head1 == applePosition gs0 -> do
-        deltas <- extendSnake head1 bi
-        apple1 <- newApple bi
+        deltas <- extendSnake head1
+        apple1 <- newApple
         return [Board.RenderBoard (deltas <> [(apple1, Board.Apple)]), Board.UpdateScore 1]
      | otherwise -> do
-        deltas <- displaceSnake head1 bi
+        deltas <- displaceSnake head1
         return [Board.RenderBoard deltas]
 
 
-extendSnake :: Point -> BoardInfo -> GameStep Board.DeltaBoard
-extendSnake head1 _bi = do
-  gs0@(GameState (SnakeSeq head0 body0) _ _ _) <- get
-  put gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body0)}
+extendSnake :: Point -> GameStep Board.DeltaBoard
+extendSnake head1 = do
+  gs0@(GameState (SnakeSeq head0 body0) _ _ _) <- lift $ get
+  lift $ put gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body0)}
   return [(head1, Board.SnakeHead), (head0, Board.Snake)]
 
 
-displaceSnake :: Point -> BoardInfo -> GameStep Board.DeltaBoard
-displaceSnake head1 _bi = do
-  gs0@(GameState (SnakeSeq head0 body0) _ _ _) <- get
+displaceSnake :: Point -> GameStep Board.DeltaBoard
+displaceSnake head1 = do
+  gs0@(GameState (SnakeSeq head0 body0) _ _ _) <- lift $ get
   let (body1 S.:|> last0) = body0
   if S.null body0 
-    then put gs0 {snakeSeq = SnakeSeq head1 body0}
+    then lift $ put gs0 {snakeSeq = SnakeSeq head1 body0}
       >> return [(head1, Board.SnakeHead), (head0, Board.Empty)]
-    else put gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
+    else lift $ put gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body1)}
       >> return [(head1, Board.SnakeHead), (head0, Board.Snake), (last0, Board.Empty)]
 
