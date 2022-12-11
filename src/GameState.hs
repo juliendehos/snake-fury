@@ -9,7 +9,7 @@ import qualified RenderState as Board
 
 import Control.Monad.Trans.Class ( MonadTrans(lift) )
 import Control.Monad.Trans.Reader (ReaderT (runReaderT), ask)
-import Control.Monad.Trans.State.Strict (State, get, put, modify, gets, runState)
+import Control.Monad.Trans.State.Strict (State, get, put, modify', gets, runState)
 import Data.Maybe (isJust)
 import Data.Sequence ( Seq(..))
 import Data.Sequence qualified as S
@@ -83,7 +83,7 @@ newApple = do
   p1 <- makeRandomPoint
   if inSnake p1 snake_seq || p1 == apple0
       then newApple
-      else lift (modify (\gs -> gs { applePosition = p1 })) >> return p1
+      else lift (modify' (\gs -> gs { applePosition = p1 })) >> return p1
 
 
 -- | Moves the snake based on the current direction. It sends the adequate RenderMessage

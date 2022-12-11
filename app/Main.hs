@@ -40,9 +40,9 @@ gameloop binf gstate rstate queue = do
             if movement gstate == opositeMovement m
               then move binf gstate
               else move binf $ gstate{movement = m}
-  let rstate' = updateMessages rstate delta
   putStr "\ESC[2J" --This cleans the console screen
-  B.hPutBuilder stdout $ render binf rstate'
+  let (str, rstate') = render delta binf rstate
+  B.hPutBuilder stdout str
   gameloop binf gstate' rstate' queue
 
 -- | main.

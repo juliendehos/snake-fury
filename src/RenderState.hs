@@ -21,7 +21,10 @@ module RenderState where
 -- This are all imports you need. Feel free to import more things.
 import Data.Array ( (//), listArray, Array )
 import Data.ByteString.Builder qualified as B
-import Data.Foldable ( foldl' )
+import Control.Monad.Trans.Reader (ReaderT (runReaderT), asks)
+import Control.Monad.Trans.State.Strict (State, get, runState, modify')
+import Control.Monad.Trans (lift)
+import Data.Foldable ( foldl', traverse_ )
 
 -- A point is just a tuple of integers.
 type Point = (Int, Int)
@@ -40,18 +43,20 @@ type DeltaBoard = [(Point, CellType)]
 -- | The render message represent all message the GameState can send to the RenderState
 --   Right now Possible messages are a RenderBoard with a payload indicating which cells change
 --   or a GameOver message.
-data RenderMessage 
-  = RenderBoard DeltaBoard 
-  | GameOver 
-  | UpdateScore Int 
+data RenderMessage
+  = RenderBoard DeltaBoard
+  | GameOver
+  | UpdateScore Int
   deriving (Eq, Show)
 
 -- | The RenderState contains the board and if the game is over or not.
-data RenderState = RenderState 
+data RenderState = RenderState
   { board :: Board
   , gameOver :: Bool
   , score :: Int
   } deriving (Eq, Show)
+
+type RenderStep a = ReaderT BoardInfo (State RenderState) a
 
 -- | Given The board info, this function should return a board with all Empty cells
 emptyGrid :: BoardInfo -> Board
@@ -59,20 +64,20 @@ emptyGrid (BoardInfo h w) = listArray ((1,1), (h,w)) (replicate (h*w) Empty)
 
 
 -- | Given BoardInfo, initial point of snake and initial point of apple, builds a board
-buildInitialBoard 
+buildInitialBoard
   :: BoardInfo -- ^ Board size
   -> Point     -- ^ initial point of the snake
   -> Point     -- ^ initial Point of the apple
   -> RenderState
-buildInitialBoard binf sp ap = 
+buildInitialBoard binf sp ap =
   RenderState (emptyGrid binf // [(sp, SnakeHead), (ap, Apple)]) False 0
 
 
 -- | Given tye current render state, and a message -> update the render state
-updateRenderState :: RenderState -> RenderMessage -> RenderState
-updateRenderState (RenderState b _ sc) GameOver = RenderState b True sc
-updateRenderState (RenderState b s sc) (RenderBoard db) = RenderState (b // db) s sc
-updateRenderState (RenderState b s sc) (UpdateScore usc) = RenderState b s (sc+usc)
+updateRenderState :: RenderMessage -> RenderStep ()
+updateRenderState GameOver = lift $ modify' (\gs -> gs { gameOver = True })
+updateRenderState (RenderBoard db) = lift $ modify' (\gs -> gs { board = board gs // db })
+updateRenderState (UpdateScore usc) = lift $ modify' (\gs -> gs { score = score gs + usc })
 
 
 -- | Provisional Pretty printer
@@ -94,18 +99,24 @@ ppScore s = "score: " <> B.intDec s <> B.charUtf8 '\n'
 
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
-render :: BoardInfo -> RenderState -> B.Builder
-render (BoardInfo _ w) (RenderState b gOver s) = 
+renderStep :: [RenderMessage] -> RenderStep B.Builder
+renderStep messages = do
+  updateMessages messages
+  w <- asks width
+  RenderState b gOver s <- lift get
   let go (!str, !i) x =
         if i==w
           then (str <> ppCell x <> B.charUtf8 '\n', 1)
-          else (str <> ppCell x, i+1) 
+          else (str <> ppCell x, i+1)
       (boardString, _) = foldl' go (mempty, 1) b
- in if gOver
+  return $ if gOver
       then boardString <> ppScore s <> "\ngame over"
       else boardString <> ppScore s
 
+render :: [RenderMessage] -> BoardInfo -> RenderState ->  (B.Builder, RenderState)
+render messages bi = runState (runReaderT (renderStep messages) bi)
 
-updateMessages :: RenderState -> [RenderMessage] -> RenderState
-updateMessages = foldl' updateRenderState
+updateMessages :: [RenderMessage] -> RenderStep ()
+updateMessages = traverse_ updateRenderState
+
 
