@@ -1,10 +1,10 @@
-{-# LANGUAGE StrictData #-}
-{-# LANGUAGE TypeApplications #-}
-
 {- |
 This module handle the external events of the game. That is: the user inputs and the time.
 -}
 module EventQueue where
+
+import GameState (Movement (..))
+import GameState qualified as Snake
 
 import Control.Concurrent (
   MVar,
@@ -16,8 +16,6 @@ import Control.Concurrent.BoundedChan (
   tryReadChan,
   tryWriteChan,
  )
-import GameState (Movement (..))
-import qualified GameState as Snake
 import System.IO (hReady, stdin)
 
 -- | The are two kind of events, a `ClockEvent`, representing movement which is not force by the user input, and `UserEvent` which is the opposite.

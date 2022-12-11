@@ -1,7 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StrictData #-}
-
 {-|
 This module defines the board. A board is an array of CellType elements indexed by a tuple of ints: the height and width.
 
@@ -23,8 +19,8 @@ Which would look like this:
 module RenderState where
 
 -- This are all imports you need. Feel free to import more things.
-import Data.Array ( (//), listArray, Array, elems )
-import qualified Data.ByteString.Builder as B
+import Data.Array ( (//), listArray, Array )
+import Data.ByteString.Builder qualified as B
 import Data.Foldable ( foldl' )
 
 -- A point is just a tuple of integers.

@@ -17,7 +17,21 @@ source-repository head
   type: git
   location: https://github.com/lsmor/snake-fury
 
+common shared-properties
+  ghc-options: -threaded -rtsopts -Wall -O2
+  default-language: Haskell2010
+  default-extensions:
+      BangPatterns
+      ImportQualifiedPost
+      MultiWayIf
+      NamedFieldPuns
+      NumericUnderscores
+      OverloadedStrings
+      StrictData
+      TypeApplications
+
 library
+  import: shared-properties
   exposed-modules:
       EventQueue
       RenderState
@@ -27,8 +41,6 @@ library
       Paths_snake_fury
   hs-source-dirs:
       src
-  default-extensions:
-      StrictData
   build-depends:
       base 
     , BoundedChan ^>= 1.0.3.0
@@ -39,25 +51,21 @@ library
     , mtl ^>= 2.2.2
     , random ^>= 1.2.0
     , hspec
-  default-language: Haskell2010
 
 executable snake-fury
+  import: shared-properties
   main-is: Main.hs
   other-modules:
       Paths_snake_fury
   hs-source-dirs:
       app
-  default-extensions:
-      StrictData
-  ghc-options: -threaded -rtsopts -Wall
   build-depends:
       base >=4.7 && <5
     , snake-fury
     , bytestring ^>= 0.10.12.0
-  default-language: Haskell2010
 
 test-suite spec
-  default-language: Haskell2010
+  import: shared-properties
   main-is:          Spec.hs
   hs-source-dirs:   test
   type:             exitcode-stdio-1.0

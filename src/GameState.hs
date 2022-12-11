@@ -1,7 +1,3 @@
-{-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE StrictData #-}
-
 {-|
 This module defines the logic of the game and the communication with the `Board.RenderState`
 -}
@@ -14,7 +10,7 @@ import qualified RenderState as Board
 import Control.Monad.Trans.State.Strict (State, get, put, modify, gets, runState)
 import Data.Maybe (isJust)
 import Data.Sequence ( Seq(..))
-import qualified Data.Sequence as S
+import Data.Sequence qualified as S
 import System.Random (uniformR, StdGen)
 
 -- The movement is one of this.
@@ -79,9 +75,10 @@ nextHead BoardInfo {height, width} GameState {snakeSeq, movement} =
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
 newApple :: BoardInfo -> GameStep Point
 newApple bi = do
-  gs0 <- get
+  snake_seq <- gets snakeSeq
+  apple0 <- gets applePosition
   p1 <- makeRandomPoint bi
-  if inSnake p1 (snakeSeq gs0) || p1 == applePosition gs0
+  if inSnake p1 snake_seq || p1 == apple0
       then newApple bi
       else modify (\gs -> gs { applePosition = p1 }) >> return p1
 
@@ -120,14 +117,14 @@ step bi = do
 
 
 extendSnake :: Point -> BoardInfo -> GameStep Board.DeltaBoard
-extendSnake head1 bi = do
+extendSnake head1 _bi = do
   gs0@(GameState (SnakeSeq head0 body0) _ _ _) <- get
   put gs0 {snakeSeq = SnakeSeq head1 (head0 S.<| body0)}
   return [(head1, Board.SnakeHead), (head0, Board.Snake)]
 
 
 displaceSnake :: Point -> BoardInfo -> GameStep Board.DeltaBoard
-displaceSnake head1 bi = do
+displaceSnake head1 _bi = do
   gs0@(GameState (SnakeSeq head0 body0) _ _ _) <- get
   let (body1 S.:|> last0) = body0
   if S.null body0 

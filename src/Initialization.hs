@@ -1,13 +1,13 @@
 module Initialization where
 
-
-import qualified RenderState
-import qualified GameState as Snake
+import RenderState qualified
+import GameState qualified as Snake
 import EventQueue (EventQueue (EventQueue))
-import qualified Data.Sequence as S
-import System.Random ( getStdGen, randomRIO )
-import Control.Concurrent.BoundedChan ( newBoundedChan )
+
 import Control.Concurrent ( newMVar )
+import Control.Concurrent.BoundedChan ( newBoundedChan )
+import Data.Sequence qualified as S
+import System.Random ( getStdGen, randomRIO )
 
 -- | Produces a random point. Use for game initialization, random point generation is done purely within Snake module.
 getRandomPoint :: Int -> Int -> IO RenderState.Point
