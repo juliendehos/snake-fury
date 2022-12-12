@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 {-|
 This module defines the board. A board is an array of CellType elements indexed by a tuple of ints: the height and width.
 
@@ -23,9 +21,11 @@ module RenderState where
 -- This are all imports you need. Feel free to import more things.
 import Data.Array ( (//), listArray, Array )
 import Data.ByteString.Builder qualified as B
-import Control.Monad.Reader (MonadReader, ReaderT (runReaderT), asks)
-import Control.Monad.State.Strict (MonadState, StateT, get, runStateT, modify')
+import Control.Monad.Reader (MonadReader, ReaderT, asks)
+import Control.Monad.State.Strict (MonadState, StateT, gets, modify')
+import Control.Monad.Trans (MonadIO, liftIO)
 import Data.Foldable ( foldl', traverse_ )
+import System.IO (stdout)
 
 -- A point is just a tuple of integers.
 type Point = (Int, Int)
@@ -60,6 +60,12 @@ data RenderState = RenderState
 newtype RenderStep m a = RenderStep {runRenderStep :: ReaderT BoardInfo (StateT RenderState m) a}
   deriving (Functor, Applicative, Monad, MonadState RenderState, MonadReader BoardInfo)
 
+-- This is the class of type which you can access a field of type RenderState.
+class HasRenderState state where
+  getRenderState :: state -> RenderState
+  setRenderState :: state -> RenderState -> state
+
+
 -- | Given The board info, this function should return a board with all Empty cells
 emptyGrid :: BoardInfo -> Board
 emptyGrid (BoardInfo h w) = listArray ((1,1), (h,w)) (replicate (h*w) Empty)
@@ -76,10 +82,14 @@ buildInitialBoard binf sp ap =
 
 
 -- | Given tye current render state, and a message -> update the render state
-updateRenderState :: (MonadReader BoardInfo m, MonadState RenderState m) => RenderMessage -> m ()
-updateRenderState GameOver = modify' (\gs -> gs { gameOver = True })
-updateRenderState (RenderBoard db) = modify' (\gs -> gs { board = board gs // db })
-updateRenderState (UpdateScore usc) = modify' (\gs -> gs { score = score gs + usc })
+updateRenderState :: (MonadReader BoardInfo m, MonadState s m, HasRenderState s) => RenderMessage -> m ()
+updateRenderState message = do
+  gs0 <- gets getRenderState
+  let gs1 = case message of
+        GameOver -> gs0 { gameOver = True }
+        RenderBoard db -> gs0 { board = board gs0 // db }
+        UpdateScore usc -> gs0 { score = score gs0 + usc }
+  modify' $ \s -> setRenderState s gs1
 
 
 -- | Provisional Pretty printer
@@ -101,11 +111,11 @@ ppScore s = "score: " <> B.intDec s <> B.charUtf8 '\n'
 
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
-renderStep :: (MonadReader BoardInfo m, MonadState RenderState m) => [RenderMessage] -> m B.Builder
+renderStep :: (MonadReader BoardInfo m, MonadState s m, HasRenderState s) => [RenderMessage] -> m B.Builder
 renderStep messages = do
   updateMessages messages
   w <- asks width
-  RenderState b gOver s <- get
+  RenderState b gOver s <- gets getRenderState
   let go (!str, !i) x =
         if i==w
           then (str <> ppCell x <> B.charUtf8 '\n', 1)
@@ -115,9 +125,12 @@ renderStep messages = do
       then boardString <> ppScore s <> "game over\n"
       else boardString <> ppScore s
 
-render :: Monad m => [RenderMessage] -> BoardInfo -> RenderState -> m (B.Builder, RenderState)
-render messages bi = runStateT (runReaderT (renderStep messages) bi)
+render :: (MonadReader BoardInfo m, MonadState state m, HasRenderState state, MonadIO m) => [RenderMessage] -> m ()
+render messages = do
+  liftIO $ putStr "\ESC[2J" --This cleans the console screen
+  str <- renderStep messages
+  liftIO $ B.hPutBuilder stdout str
 
-updateMessages :: (MonadReader BoardInfo m, MonadState RenderState m) => [RenderMessage] -> m ()
+updateMessages :: (MonadReader BoardInfo m, MonadState s m, HasRenderState s) => [RenderMessage] -> m ()
 updateMessages = traverse_ updateRenderState
 

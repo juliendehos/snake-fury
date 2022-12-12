@@ -22,6 +22,7 @@ common shared-properties
   default-extensions:
       BangPatterns
       FlexibleContexts
+      GeneralizedNewtypeDeriving
       ImportQualifiedPost
       MultiWayIf
       NamedFieldPuns
@@ -58,6 +59,7 @@ executable snake-fury
   ghc-options: -threaded -rtsopts -Wall -O2
   main-is: Main.hs
   other-modules:
+      App
       Paths_snake_fury
   hs-source-dirs:
       app
@@ -65,6 +67,7 @@ executable snake-fury
       base >=4.7 && <5
     , snake-fury
     , bytestring ^>= 0.10.12.0
+    , mtl
 
 test-suite spec
   import: shared-properties
