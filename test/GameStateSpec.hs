@@ -53,23 +53,27 @@ spec = do
             snake_seq2 = SnakeSeq (3,3) (Data.Sequence.fromList [(4,2), (4,3), (4,4), (3,4), (2,4), (2,3)])
             game_state4 = GameState snake_seq2 apple_pos South (System.Random.mkStdGen 1)
 
+        (rs1, _) <- move Tick board_info game_state1
         it "1" $ 
-            fst (move Tick board_info game_state1)
+            rs1
             `shouldBe`
             [RenderBoard [((1,4),SnakeHead),((1,1),Snake),((1,3),RenderState.Empty)]]
 
+        (rs2, _) <- move Tick board_info game_state2
         it "2" $ 
-            fst (move Tick board_info game_state2)
+            rs2
             `shouldBe`
             [RenderBoard [((2,1),SnakeHead),((1,1),Snake),((2,4),Apple)], UpdateScore 1]
 
+        (rs3, _) <- move Tick board_info game_state3
         it "3" $
-            fst (move Tick board_info game_state3)
+            rs3
             `shouldBe`
             [RenderBoard [((4,1),SnakeHead),((1,1),Snake),((1,3),RenderState.Empty)]]
 
+        (rs4, _) <- move Tick board_info game_state4
         it "4" $ 
-            fst (move Tick board_info game_state4)
+            rs4
             `shouldBe`
             [GameOver]
 

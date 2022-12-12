@@ -21,6 +21,8 @@ common shared-properties
   default-language: Haskell2010
   default-extensions:
       BangPatterns
+      FlexibleContexts
+      GeneralizedNewtypeDeriving
       ImportQualifiedPost
       MultiWayIf
       NamedFieldPuns

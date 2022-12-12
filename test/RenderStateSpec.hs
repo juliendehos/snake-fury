@@ -91,7 +91,7 @@ spec = do
             board_info = BoardInfo 3 4
             render_state = RenderState b  False 0
 
-        let (str1, gs1) = render [] board_info render_state
+        (str1, gs1) <- render [] board_info render_state
         it "1" $ 
             B.toLazyByteString str1
             `shouldBe`

@@ -21,9 +21,8 @@ module RenderState where
 -- This are all imports you need. Feel free to import more things.
 import Data.Array ( (//), listArray, Array )
 import Data.ByteString.Builder qualified as B
-import Control.Monad.Trans.Reader (ReaderT (runReaderT), asks)
-import Control.Monad.Trans.State.Strict (State, get, runState, modify')
-import Control.Monad.Trans (lift)
+import Control.Monad.Reader (MonadReader, ReaderT (runReaderT), asks)
+import Control.Monad.State.Strict (MonadState, State, get, runState, modify')
 import Data.Foldable ( foldl', traverse_ )
 
 -- A point is just a tuple of integers.
@@ -74,10 +73,10 @@ buildInitialBoard binf sp ap =
 
 
 -- | Given tye current render state, and a message -> update the render state
-updateRenderState :: RenderMessage -> RenderStep ()
-updateRenderState GameOver = lift $ modify' (\gs -> gs { gameOver = True })
-updateRenderState (RenderBoard db) = lift $ modify' (\gs -> gs { board = board gs // db })
-updateRenderState (UpdateScore usc) = lift $ modify' (\gs -> gs { score = score gs + usc })
+updateRenderState :: (MonadReader BoardInfo m, MonadState RenderState m) => RenderMessage -> m ()
+updateRenderState GameOver = modify' (\gs -> gs { gameOver = True })
+updateRenderState (RenderBoard db) = modify' (\gs -> gs { board = board gs // db })
+updateRenderState (UpdateScore usc) = modify' (\gs -> gs { score = score gs + usc })
 
 
 -- | Provisional Pretty printer
@@ -99,11 +98,11 @@ ppScore s = "score: " <> B.intDec s <> B.charUtf8 '\n'
 
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
-renderStep :: [RenderMessage] -> RenderStep B.Builder
+renderStep :: (MonadReader BoardInfo m, MonadState RenderState m) => [RenderMessage] -> m B.Builder
 renderStep messages = do
   updateMessages messages
   w <- asks width
-  RenderState b gOver s <- lift get
+  RenderState b gOver s <- get
   let go (!str, !i) x =
         if i==w
           then (str <> ppCell x <> B.charUtf8 '\n', 1)
@@ -113,10 +112,10 @@ renderStep messages = do
       then boardString <> ppScore s <> "game over\n"
       else boardString <> ppScore s
 
-render :: [RenderMessage] -> BoardInfo -> RenderState ->  (B.Builder, RenderState)
-render messages bi = runState (runReaderT (renderStep messages) bi)
+render :: Monad m => [RenderMessage] -> BoardInfo -> RenderState -> m (B.Builder, RenderState)
+render messages bi = return . runState (runReaderT (renderStep messages) bi)
 
-updateMessages :: [RenderMessage] -> RenderStep ()
+updateMessages :: (MonadReader BoardInfo m, MonadState RenderState m) => [RenderMessage] -> m ()
 updateMessages = traverse_ updateRenderState
 
 
