@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module RenderStateSpec where
 
 import RenderState

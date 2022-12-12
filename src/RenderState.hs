@@ -22,7 +22,7 @@ module RenderState where
 import Data.Array ( (//), listArray, Array )
 import Data.ByteString.Builder qualified as B
 import Control.Monad.Reader (MonadReader, ReaderT (runReaderT), asks)
-import Control.Monad.State.Strict (MonadState, State, get, runState, modify')
+import Control.Monad.State.Strict (MonadState, StateT, get, runState, modify')
 import Data.Foldable ( foldl', traverse_ )
 
 -- A point is just a tuple of integers.
@@ -55,7 +55,8 @@ data RenderState = RenderState
   , score :: Int
   } deriving (Eq, Show)
 
-type RenderStep a = ReaderT BoardInfo (State RenderState) a
+newtype RenderStep m a = RenderStep {runRenderStep :: ReaderT BoardInfo (StateT RenderState m) a}
+  -- deriving (Functor, Applicative, Monad, MonadState RenderState, MonadReader BoardInfo)
 
 -- | Given The board info, this function should return a board with all Empty cells
 emptyGrid :: BoardInfo -> Board

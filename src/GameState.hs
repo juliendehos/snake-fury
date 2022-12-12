@@ -39,7 +39,7 @@ data GameState = GameState
   deriving (Show, Eq)
 
 newtype GameStep m a = GameStep {runGameStep :: ReaderT BoardInfo (StateT GameState m) a}
-  deriving (Functor, Applicative, Monad, MonadState GameState, MonadReader BoardInfo)
+  -- deriving (Functor, Applicative, Monad, MonadState GameState, MonadReader BoardInfo)
 
 -- TODO instances
 

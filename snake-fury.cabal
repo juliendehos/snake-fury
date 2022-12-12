@@ -22,7 +22,7 @@ common shared-properties
   default-extensions:
       BangPatterns
       FlexibleContexts
-      GeneralizedNewtypeDeriving
+      -- GeneralizedNewtypeDeriving
       ImportQualifiedPost
       MultiWayIf
       NamedFieldPuns
