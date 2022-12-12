@@ -8,14 +8,14 @@ import GameState qualified as Snake
 
 import Control.Concurrent (
   MVar,
-  readMVar,
-  swapMVar,
+  swapMVar
  )
 import Control.Concurrent.BoundedChan (
   BoundedChan,
   tryReadChan,
   tryWriteChan,
  )
+import Control.Monad (void)
 import System.IO (hReady, stdin)
 
 -- | The are two kind of events, a `ClockEvent`, representing movement which is not force by the user input, and `UserEvent` which is the opposite.
@@ -37,30 +37,30 @@ data EventQueue = EventQueue
 -- | Given the current score and the initial speed, calculates the new speed.
 --   The speed is increased by 10% every 10 points, up to 50 points.
 calculateSpeed :: Int -> Int -> Int
-calculateSpeed score speed0 =
-  let level = min score 50 `quot` 10 -- maximun of 5 levels every 10 apples
-      speedFactor = 1 - fromIntegral level / 10.0 -- every level speeds up the time by a 10%
-   in floor @Double $ fromIntegral speed0 * speedFactor
+calculateSpeed score initialSpeed = 
+  let inc = min 50 score `quot` 10
+  in initialSpeed * (100 - 10*inc) `div` 100
 
 {- | Given the current score and the event queue, updates the new speed and returns it.
    This action is mutable, therefore must be run in the IO mondad
 -}
 setSpeed :: Int -> EventQueue -> IO Int
-setSpeed s (EventQueue _ m_current initial_speed) = do
-  current_speed <- readMVar m_current -- Read the current reference to speed
-  let new_speed = calculateSpeed s initial_speed -- calculate new speed based on the score. This is a pure calculation, hence the let at the begining
-  if new_speed == current_speed
-    then pure current_speed -- If the new speed is equal to the current one, just return it
-    else swapMVar m_current new_speed >> pure new_speed -- if not, swap the content of the reference with the new speed
-
-{-
- |---------------|
- |- User Inputs -|
- |---------------|
--}
+setSpeed score EventQueue {currentSpeed, initialSpeed} =
+  let speed = calculateSpeed score initialSpeed
+  in swapMVar currentSpeed speed
 
 -- In StackOverflow we trust.
-getKey :: IO [Char]
+-- This function reads the key strokes as a String.
+-- The arrow keys correspond to the following strings
+-- "\ESC[A" -> Up Arrow
+-- "\ESC[D" -> Right Arrow
+-- "\ESC[C" -> Left Arrow
+-- "\ESC[B" -> Down Arrow
+-- therefore the following code: 
+--     k <- getKey
+--     print $ k == "\ESC[B"
+-- will print True when Down arrow is pressed
+getKey :: IO String
 getKey = reverse <$> getKey' ""
  where
   getKey' chars = do
@@ -73,21 +73,23 @@ getKey = reverse <$> getKey' ""
  meaning that if we push a movement to a filled queue it gets discarded.
  This is intented for the game play, If we press keys faster than the game speed
  they will be enqueued and pushed into the game with delay.
+
+Check getKey function's comment for a hint
 -}
 writeUserInput :: EventQueue -> IO ()
-writeUserInput queue@(EventQueue userqueue _ _) = do
-  c <- getKey
-  case c of
-    "\ESC[A" -> tryWriteChan userqueue North >> writeUserInput queue -- \ESC[A/D/C/B are the escape codes for the arrow keys.
-    "\ESC[D" -> tryWriteChan userqueue West >> writeUserInput queue
-    "\ESC[C" -> tryWriteChan userqueue East >> writeUserInput queue
-    "\ESC[B" -> tryWriteChan userqueue South >> writeUserInput queue
-    _ -> writeUserInput queue
+writeUserInput q@(EventQueue {userInput}) = do
+  key <- getKey
+  case key of
+    "\ESC[A" -> void $ tryWriteChan userInput North
+    "\ESC[B" -> void $ tryWriteChan userInput South
+    "\ESC[C" -> void $ tryWriteChan userInput East
+    "\ESC[D" -> void $ tryWriteChan userInput West
+    _ -> return ()
+  writeUserInput q
 
--- | Read the EventQueue and generates an Event to pass to the user logic
+-- | Read the EventQueue and generates an Event to pass to the user logic.
+-- It should pass an UserEvent if the queue is not empty, otherwise a Tick
 readEvent :: EventQueue -> IO Event
-readEvent (EventQueue userqueue _ _) = do
-  mv <- tryReadChan userqueue
-  case mv of
-    Nothing -> pure Tick
-    Just move -> return $ UserEvent move
+readEvent EventQueue {userInput} =
+  maybe Tick UserEvent <$> tryReadChan userInput
+

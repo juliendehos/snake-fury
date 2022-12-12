@@ -15,7 +15,7 @@ import EventQueue (
  )
 import GameState (GameState (movement), move, opositeMovement)
 import Initialization (gameInitialization)
-import RenderState (BoardInfo, RenderState (..), render, updateMessages)
+import RenderState (BoardInfo, RenderState (..), render)
 
 import qualified Data.ByteString.Builder as B
 import System.Environment (getArgs)

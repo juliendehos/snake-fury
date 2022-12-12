@@ -4,8 +4,10 @@ module RenderStateSpec where
 
 import RenderState
 
+import Control.Monad.Trans.Reader (ReaderT (runReaderT))
+import Control.Monad.Trans.State.Strict (execState)
 import Data.Array
-import qualified Data.ByteString.Builder as B
+import Data.ByteString.Builder qualified as B
 import Test.Hspec
 
 main :: IO ()
@@ -33,15 +35,16 @@ spec = do
               , score = 0
               }
 
-
     describe "updateRenderState" $ do
 
-        let initial_board =  buildInitialBoard (BoardInfo 2 2) (1,1) (2,2)
+        let board_info = BoardInfo 2 2
+            initial_board =  buildInitialBoard board_info (1,1) (2,2)
             message1 = RenderBoard [((1,2), SnakeHead), ((2,1), Apple), ((1,1), RenderState.Empty)]
             message2 = GameOver
 
+        let rs1 = execState (runReaderT (updateRenderState message1) board_info) initial_board
         it "1" $ 
-            updateRenderState initial_board message1
+            rs1
             `shouldBe`
             RenderState 
               { board = array ((1,1),(2,2)) [((1,1),Empty),((1,2),SnakeHead),((2,1),Apple),((2,2),Apple)]
@@ -49,8 +52,9 @@ spec = do
               , score = 0
               }
 
+        let rs2 = execState (runReaderT (updateRenderState message2) board_info) initial_board
         it "2" $ 
-            updateRenderState initial_board message2
+            rs2
             `shouldBe`
             RenderState 
               { board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1),Empty),((2,2),Apple)]
@@ -58,16 +62,18 @@ spec = do
               , score = 0
               }
 
-    describe "updateRenderState" $ do
+    describe "renderStep" $ do
 
-        let initial_board =  buildInitialBoard (BoardInfo 2 2) (1,1) (2,2)
+        let board_info = BoardInfo 2 2
+            initial_board =  buildInitialBoard board_info (1,1) (2,2)
             messages = 
               [ RenderBoard [((1,2), SnakeHead), ((2,1), Apple), ((1,1), RenderState.Empty)]
               , UpdateScore 1
               ]
 
+        let rs1 = execState (runReaderT (renderStep messages) board_info) initial_board
         it "1" $ 
-            updateMessages initial_board messages
+            rs1
             `shouldBe`
             RenderState 
               { board = array ((1,1),(2,2)) [((1,1),Empty),((1,2),SnakeHead),((2,1),Apple),((2,2),Apple)]
@@ -85,8 +91,9 @@ spec = do
             board_info = BoardInfo 3 4
             render_state = RenderState b  False 0
 
+        let (str1, gs1) = render [] board_info render_state
         it "1" $ 
-            B.toLazyByteString (render board_info render_state)
+            B.toLazyByteString str1
             `shouldBe`
             "- - - - \n- 0 $ - \n- - - X \nscore: 0\n"
 

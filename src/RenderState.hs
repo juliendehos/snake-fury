@@ -110,7 +110,7 @@ renderStep messages = do
           else (str <> ppCell x, i+1)
       (boardString, _) = foldl' go (mempty, 1) b
   return $ if gOver
-      then boardString <> ppScore s <> "\ngame over"
+      then boardString <> ppScore s <> "game over\n"
       else boardString <> ppScore s
 
 render :: [RenderMessage] -> BoardInfo -> RenderState ->  (B.Builder, RenderState)
