@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 {-|
 This module defines the logic of the game and the communication with the `Board.RenderState`
@@ -9,8 +11,8 @@ import RenderState (BoardInfo (..), Point)
 import qualified RenderState as Board
 
 -- import Control.Monad.Trans.Class ( MonadTrans(lift) )
-import Control.Monad.Reader (MonadReader, ReaderT (runReaderT), ask)
-import Control.Monad.State.Strict (MonadState, StateT, get, put, modify', gets, runState)
+import Control.Monad.Reader (MonadReader, ReaderT (..), ask, local)
+import Control.Monad.State.Strict (MonadState, StateT(..), get, put, modify', gets, runStateT)
 import Data.Maybe (isJust)
 import Data.Sequence ( Seq(..))
 import Data.Sequence qualified as S
@@ -41,7 +43,63 @@ data GameState = GameState
 newtype GameStep m a = GameStep {runGameStep :: ReaderT BoardInfo (StateT GameState m) a}
   -- deriving (Functor, Applicative, Monad, MonadState GameState, MonadReader BoardInfo)
 
--- TODO instances
+-- TODO test
+instance Monad m => Functor (GameStep m) where
+  fmap f (GameStep (ReaderT r)) = 
+    GameStep $
+      ReaderT $ \bi -> do
+        y <- r bi
+        StateT $ \gs ->
+          return (f y, gs)
+
+instance Monad m => Applicative (GameStep m) where
+  pure a = 
+    GameStep $
+      ReaderT $ \_ ->
+        StateT $ \gs -> 
+          return (a, gs)
+
+  (GameStep (ReaderT r1)) <*> (GameStep (ReaderT r2)) = 
+    GameStep $
+      ReaderT $ \bi -> do
+        y1 <- r1 bi
+        y2 <- r2 bi
+        StateT $ \gs ->
+          return (y1 y2, gs)
+
+instance Monad m => Monad (GameStep m) where
+  (GameStep (ReaderT r)) >>= k =
+    GameStep $
+      ReaderT $ \bi -> do
+        y <- r bi
+        StateT $ \gs ->
+          runStateT (runReaderT (runGameStep (k y)) bi) gs
+
+instance Monad m => MonadState GameState (GameStep m) where
+  get = 
+    GameStep $
+      ReaderT $ \_ ->
+        StateT $ \gs -> 
+          return (gs, gs)
+
+  put gs = 
+    GameStep $
+      ReaderT $ \_ ->
+        StateT $ \_ -> 
+          return ((), gs)
+
+instance Monad m => MonadReader BoardInfo (GameStep m) where
+  ask = 
+    GameStep $
+      ReaderT $ \bi ->
+        StateT $ \gs -> 
+          return (bi, gs)
+
+  local f (GameStep r) = 
+    GameStep $
+      ReaderT $ \bi ->
+        StateT $ \gs ->
+          runStateT (runReaderT r (f bi)) gs
 
 
 -- | This function should calculate the opposite movement.
@@ -118,7 +176,7 @@ move event bi gs0 =
           if movement gs0 == opositeMovement m
             then gs0
             else gs0 {movement = m}
-  in return $ runState (runReaderT step bi) gs1
+  in runStateT (runReaderT (runGameStep step) bi) gs1
 
 step :: (MonadReader BoardInfo m, MonadState GameState m) => m [Board.RenderMessage]
 step = do

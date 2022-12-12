@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {-|
 This module defines the board. A board is an array of CellType elements indexed by a tuple of ints: the height and width.
 
@@ -22,7 +24,7 @@ module RenderState where
 import Data.Array ( (//), listArray, Array )
 import Data.ByteString.Builder qualified as B
 import Control.Monad.Reader (MonadReader, ReaderT (runReaderT), asks)
-import Control.Monad.State.Strict (MonadState, StateT, get, runState, modify')
+import Control.Monad.State.Strict (MonadState, StateT, get, runStateT, modify')
 import Data.Foldable ( foldl', traverse_ )
 
 -- A point is just a tuple of integers.
@@ -56,7 +58,7 @@ data RenderState = RenderState
   } deriving (Eq, Show)
 
 newtype RenderStep m a = RenderStep {runRenderStep :: ReaderT BoardInfo (StateT RenderState m) a}
-  -- deriving (Functor, Applicative, Monad, MonadState RenderState, MonadReader BoardInfo)
+  deriving (Functor, Applicative, Monad, MonadState RenderState, MonadReader BoardInfo)
 
 -- | Given The board info, this function should return a board with all Empty cells
 emptyGrid :: BoardInfo -> Board
@@ -114,9 +116,8 @@ renderStep messages = do
       else boardString <> ppScore s
 
 render :: Monad m => [RenderMessage] -> BoardInfo -> RenderState -> m (B.Builder, RenderState)
-render messages bi = return . runState (runReaderT (renderStep messages) bi)
+render messages bi = runStateT (runReaderT (renderStep messages) bi)
 
 updateMessages :: (MonadReader BoardInfo m, MonadState RenderState m) => [RenderMessage] -> m ()
 updateMessages = traverse_ updateRenderState
-
 
