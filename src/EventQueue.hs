@@ -3,8 +3,7 @@ This module handle the external events of the game. That is: the user inputs and
 -}
 module EventQueue where
 
-import GameState (Movement (..))
-import GameState qualified as Snake
+import GameState (Movement (..), Event (..))
 
 import Control.Concurrent (
   MVar,
@@ -18,11 +17,8 @@ import Control.Concurrent.BoundedChan (
 import Control.Monad (void)
 import System.IO (hReady, stdin)
 
--- | The are two kind of events, a `ClockEvent`, representing movement which is not force by the user input, and `UserEvent` which is the opposite.
-data Event = Tick | UserEvent Snake.Movement
-
 -- | the `UserInputQueue` is an asynchronous bounded channel which contains snake movements. This channel is feeded by key strokes
-type UserInputQueue = BoundedChan Snake.Movement
+type UserInputQueue = BoundedChan Movement
 
 -- | The `EventQueue` has a `UserInputQueue` and the global speed of consumption (as a mutable reference) and the initial speed of the game.
 data EventQueue = EventQueue

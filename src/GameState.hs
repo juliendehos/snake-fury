@@ -18,6 +18,9 @@ import System.Random (uniformR, StdGen)
 -- The movement is one of this.
 data Movement = North | South | East | West deriving (Show, Eq)
 
+-- | The are two kind of events, a `ClockEvent`, representing movement which is not force by the user input, and `UserEvent` which is the opposite.
+data Event = Tick | UserEvent Movement
+
 -- | The snakeSeq is a non-empty sequence. It is important to use precise types in Haskell
 --   In first sight we'd define the snake as a sequence, but If you think carefully, an empty 
 --   sequence can't represent a valid Snake, therefore we must use a non empty one.
@@ -102,8 +105,15 @@ newApple = do
 --        - 0 $ X          - 0 0 $
 -- We need to send the following delta: [((2,2), Apple), ((4,3), Snake), ((4,4), SnakeHead)]
 -- 
-move :: BoardInfo -> GameState -> ([Board.RenderMessage], GameState)
-move bi = runState (runReaderT step bi)
+move :: Event -> BoardInfo -> GameState -> ([Board.RenderMessage], GameState)
+move event bi gs0 = 
+  let gs1 = case event of
+        Tick -> gs0
+        UserEvent m ->
+          if movement gs0 == opositeMovement m
+            then gs0
+            else gs0 {movement = m}
+  in runState (runReaderT step bi) gs1
 
 step :: GameStep [Board.RenderMessage]
 step = do

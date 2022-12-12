@@ -54,22 +54,22 @@ spec = do
             game_state4 = GameState snake_seq2 apple_pos South (System.Random.mkStdGen 1)
 
         it "1" $ 
-            fst (move board_info game_state1)
+            fst (move Tick board_info game_state1)
             `shouldBe`
             [RenderBoard [((1,4),SnakeHead),((1,1),Snake),((1,3),RenderState.Empty)]]
 
         it "2" $ 
-            fst (move board_info game_state2)
+            fst (move Tick board_info game_state2)
             `shouldBe`
             [RenderBoard [((2,1),SnakeHead),((1,1),Snake),((2,4),Apple)], UpdateScore 1]
 
         it "3" $
-            fst (move board_info game_state3)
+            fst (move Tick board_info game_state3)
             `shouldBe`
             [RenderBoard [((4,1),SnakeHead),((1,1),Snake),((1,3),RenderState.Empty)]]
 
         it "4" $ 
-            fst (move board_info game_state4)
+            fst (move Tick board_info game_state4)
             `shouldBe`
             [GameOver]
 
