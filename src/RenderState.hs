@@ -65,6 +65,9 @@ class HasRenderState state where
   getRenderState :: state -> RenderState
   setRenderState :: state -> RenderState -> state
 
+class HasBoardInfo env where
+  getBoardInfo :: env -> BoardInfo
+
 
 -- | Given The board info, this function should return a board with all Empty cells
 emptyGrid :: BoardInfo -> Board
@@ -82,7 +85,7 @@ buildInitialBoard binf sp ap =
 
 
 -- | Given tye current render state, and a message -> update the render state
-updateRenderState :: (MonadReader BoardInfo m, MonadState s m, HasRenderState s) => RenderMessage -> m ()
+updateRenderState :: (MonadReader env m, HasBoardInfo env, MonadState s m, HasRenderState s) => RenderMessage -> m ()
 updateRenderState message = do
   gs0 <- gets getRenderState
   let gs1 = case message of
@@ -111,10 +114,9 @@ ppScore s = "score: " <> B.intDec s <> B.charUtf8 '\n'
 
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
-renderStep :: (MonadReader BoardInfo m, MonadState s m, HasRenderState s) => [RenderMessage] -> m B.Builder
-renderStep messages = do
-  updateMessages messages
-  w <- asks width
+renderStep :: (MonadReader env m, HasBoardInfo env, MonadState s m, HasRenderState s) => m B.Builder
+renderStep = do
+  w <- asks (width . getBoardInfo)
   RenderState b gOver s <- gets getRenderState
   let go (!str, !i) x =
         if i==w
@@ -125,12 +127,12 @@ renderStep messages = do
       then boardString <> ppScore s <> "game over\n"
       else boardString <> ppScore s
 
-render :: (MonadReader BoardInfo m, MonadState state m, HasRenderState state, MonadIO m) => [RenderMessage] -> m ()
-render messages = do
+render :: (MonadReader env m, HasBoardInfo env, MonadState state m, HasRenderState state, MonadIO m) => m ()
+render = do
   liftIO $ putStr "\ESC[2J" --This cleans the console screen
-  str <- renderStep messages
+  str <- renderStep
   liftIO $ B.hPutBuilder stdout str
 
-updateMessages :: (MonadReader BoardInfo m, MonadState s m, HasRenderState s) => [RenderMessage] -> m ()
+updateMessages :: (MonadReader env m, HasBoardInfo env, MonadState s m, HasRenderState s) => [RenderMessage] -> m ()
 updateMessages = traverse_ updateRenderState
 

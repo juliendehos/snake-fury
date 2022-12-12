@@ -7,6 +7,24 @@ import Data.Sequence
 import System.Random
 import Test.Hspec
 
+
+import Control.Monad.Reader (MonadReader, ReaderT (runReaderT), asks)
+import Control.Monad.State (MonadState, gets, StateT, evalStateT)
+import Control.Monad.IO.Class (MonadIO (liftIO))
+
+data AppState = AppState GameState RenderState
+
+newtype App m a = App {runApp :: ReaderT BoardInfo (StateT AppState m) a}
+  deriving (Functor , Applicative, Monad, MonadState AppState, MonadReader BoardInfo, MonadIO)
+
+instance HasBoardInfo BoardInfo where
+  getBoardInfo binf = binf
+
+instance HasGameState AppState where
+  getGameState (AppState gs _) = gs
+  setGameState (AppState _ rs) gs' = AppState gs' rs
+
+
 main :: IO ()
 main = hspec spec
 
@@ -43,7 +61,8 @@ spec = do
 
     describe "move" $ do
 
-        let snake_seq1 = SnakeSeq (1,1) (Data.Sequence.fromList [(1,2), (1,3)])
+        let snake_head = (1,1)
+            snake_seq1 = SnakeSeq snake_head (Data.Sequence.fromList [(1,2), (1,3)])
             apple_pos = (2,1) 
             board_info = BoardInfo 4 4
             game_state1 = GameState snake_seq1 apple_pos West (System.Random.mkStdGen 1)
@@ -53,25 +72,27 @@ spec = do
             snake_seq2 = SnakeSeq (3,3) (Data.Sequence.fromList [(4,2), (4,3), (4,4), (3,4), (2,4), (2,3)])
             game_state4 = GameState snake_seq2 apple_pos South (System.Random.mkStdGen 1)
 
-        (rs1, _) <- move Tick board_info game_state1
+        let render_state = buildInitialBoard board_info snake_head apple_pos
+
+        rs1 <- runApp (move Tick) `runReaderT` board_info `evalStateT` AppState game_state1 render_state
         it "1" $ 
             rs1
             `shouldBe`
             [RenderBoard [((1,4),SnakeHead),((1,1),Snake),((1,3),RenderState.Empty)]]
 
-        (rs2, _) <- move Tick board_info game_state2
+        rs2 <- runApp (move Tick) `runReaderT` board_info `evalStateT` AppState game_state2 render_state
         it "2" $ 
             rs2
             `shouldBe`
             [RenderBoard [((2,1),SnakeHead),((1,1),Snake),((2,4),Apple)], UpdateScore 1]
 
-        (rs3, _) <- move Tick board_info game_state3
+        rs3 <- runApp (move Tick) `runReaderT` board_info `evalStateT` AppState game_state3 render_state
         it "3" $
             rs3
             `shouldBe`
             [RenderBoard [((4,1),SnakeHead),((1,1),Snake),((1,3),RenderState.Empty)]]
 
-        (rs4, _) <- move Tick board_info game_state4
+        rs4 <- runApp (move Tick) `runReaderT` board_info `evalStateT` AppState game_state4 render_state
         it "4" $ 
             rs4
             `shouldBe`

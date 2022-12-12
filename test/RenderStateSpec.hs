@@ -1,12 +1,27 @@
 module RenderStateSpec where
 
 import RenderState
+import GameState
 
-import Control.Monad.Trans.Reader (ReaderT (runReaderT))
-import Control.Monad.Trans.State.Strict (execState)
 import Data.Array
 import Data.ByteString.Builder qualified as B
 import Test.Hspec
+
+
+import Control.Monad.Reader (MonadReader, ReaderT(..), asks)
+import Control.Monad.State.Strict (MonadState, StateT(..), gets, modify', execState, execStateT, evalStateT)
+import Control.Monad.Trans (MonadIO, liftIO)
+
+newtype App m a = App {runApp :: ReaderT BoardInfo (StateT RenderState m) a}
+  deriving (Functor , Applicative, Monad, MonadState RenderState, MonadReader BoardInfo, MonadIO)
+
+instance HasBoardInfo BoardInfo where
+  getBoardInfo binf = binf
+
+instance HasRenderState RenderState where
+  getRenderState rs = rs
+  setRenderState _ rs = rs
+
 
 main :: IO ()
 main = hspec spec
@@ -62,21 +77,25 @@ spec = do
 
     describe "renderStep" $ do
 
-        let board_info = BoardInfo 2 2
+        let snake_head = (1,1)
+            apple_pos = (2,1) 
+            board_info = BoardInfo 2 2
             initial_board =  buildInitialBoard board_info (1,1) (2,2)
             messages = 
               [ RenderBoard [((1,2), SnakeHead), ((2,1), Apple), ((1,1), RenderState.Empty)]
               , UpdateScore 1
               ]
 
-        let rs1 = execState (runReaderT (renderStep messages) board_info) initial_board
+        let render_state = buildInitialBoard board_info snake_head apple_pos
+
+        rs1 <- runApp renderStep `runReaderT` board_info `execStateT` render_state
         it "1" $ 
             rs1
             `shouldBe`
             RenderState 
-              { board = array ((1,1),(2,2)) [((1,1),Empty),((1,2),SnakeHead),((2,1),Apple),((2,2),Apple)]
+              { board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1),Apple),((2,2),Empty)]
               , gameOver = False
-              , score = 1
+              , score = 0
               }
 
     describe "render" $ do
@@ -89,7 +108,8 @@ spec = do
             board_info = BoardInfo 3 4
             render_state = RenderState b  False 0
 
-        (str1, gs1) <- render [] board_info render_state
+        str1 <- runApp renderStep `runReaderT` board_info `evalStateT` render_state
+        -- (str1, gs1) <- render [] board_info render_state
         it "1" $ 
             B.toLazyByteString str1
             `shouldBe`

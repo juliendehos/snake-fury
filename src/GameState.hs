@@ -4,11 +4,11 @@ This module defines the logic of the game and the communication with the `Board.
 module GameState where
 
 -- These are all the import. Feel free to use more if needed.
-import RenderState (BoardInfo (..), Point)
+import RenderState (BoardInfo(..), Point, HasBoardInfo(..))
 import qualified RenderState as Board
 
 import Control.Monad (when)
-import Control.Monad.Reader (MonadReader, ReaderT (..), ask)
+import Control.Monad.Reader (MonadReader, ReaderT (..), asks)
 import Control.Monad.State.Strict (MonadState, StateT(..), modify', gets)
 import Data.Maybe (isJust)
 import Data.Sequence ( Seq(..))
@@ -57,9 +57,9 @@ opositeMovement West  = East
 -- | Purely creates a random point within the board limits
 --   You should take a look to System.Random documentation. 
 --   Also, in the import list you have all relevant functions.
-makeRandomPoint :: (MonadReader BoardInfo m, MonadState s m, HasGameState s) => m Point
+makeRandomPoint :: (MonadReader env m, HasBoardInfo env, MonadState s m, HasGameState s) => m Point
 makeRandomPoint = do
-  BoardInfo height width <- ask
+  BoardInfo height width <- asks getBoardInfo
   gs0 <- gets getGameState
   let (i, g1) = uniformR (1, height) (randomGen gs0)
       (j, g2) = uniformR (1, width) g1
@@ -86,7 +86,7 @@ nextHead BoardInfo {height, width} GameState {snakeSeq, movement} =
 
 
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
-newApple :: (MonadReader BoardInfo m, MonadState s m, HasGameState s) => m Point
+newApple :: (MonadReader env m, HasBoardInfo env, MonadState s m, HasGameState s) => m Point
 newApple = do
   gs0@GameState{snakeSeq, applePosition} <- gets getGameState
   p1 <- makeRandomPoint
@@ -111,7 +111,7 @@ newApple = do
 --        - 0 $ X          - 0 0 $
 -- We need to send the following delta: [((2,2), Apple), ((4,3), Snake), ((4,4), SnakeHead)]
 -- 
-move :: (MonadReader BoardInfo m, MonadState state m, HasGameState state) => Event -> m [Board.RenderMessage]
+move :: (MonadReader env m, HasBoardInfo env, MonadState state m, HasGameState state) => Event -> m [Board.RenderMessage]
 move event = do
   gs0 <- gets getGameState
   case event of
@@ -121,10 +121,10 @@ move event = do
         modify' $ \s -> setGameState s gs0 {movement = m}
       step
 
-step :: (MonadReader BoardInfo m, MonadState s m, HasGameState s) => m [Board.RenderMessage]
+step :: (MonadReader env m, HasBoardInfo env, MonadState s m, HasGameState s) => m [Board.RenderMessage]
 step = do
   gs0 <- gets getGameState
-  bi <- ask
+  bi <- asks getBoardInfo
   let head1 = nextHead bi gs0
   if | inSnake head1 (snakeSeq gs0) -> return [Board.GameOver]
      | head1 == applePosition gs0 -> do
